@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { Spinner } from "native-base";
+import { Toast, Spinner } from "native-base";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Button, Input, Item } from "native-base";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -39,6 +39,8 @@ import { ScrollView, FlatList } from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
 import { MaterialIcons } from "@expo/vector-icons";
+import Clipboard from '@react-native-community/clipboard';
+
 
 const width = Dimensions.get("window").width;
 
@@ -55,6 +57,7 @@ function Uploads(props) {
   useEffect(() => {
     if (focused) {
       dispatch(songActions.getSongs(token));
+      console.log(songs.data.results.fingerprint)
     }
   }, [JSON.stringify(songs), focused]);
 
@@ -102,7 +105,7 @@ function Uploads(props) {
             alignItems: "center",
           }}
         >
-          <View>
+          <View style={{}}>
             <Text
               style={{
                 fontFamily: "Trebuchet",
@@ -115,51 +118,51 @@ function Uploads(props) {
             >
               {item.title} ({item.file_size})
             </Text>
-            {item.disseminated ? (
-              <View
-                style={{
-                  backgroundColor: "#00000015",
-                  paddingTop: 5,
-                  paddingBottom: 5,
-                  paddingLeft: 20,
-                  paddingRight: 20,
-                  marginBottom: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "white",
-                    fontFamily: "Trebuchet",
-                    fontSize: 13,
-                  }}
-                >
-                  Distributed
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={{
-                  backgroundColor: "#00000065",
-                  paddingTop: 5,
-                  paddingBottom: 5,
+        
+            <TouchableOpacity
+            activeOpacity={0.8}
+            onPress= {()=>{
+              console.log(item.fingerprint)
+              Clipboard.setString(item.fingerprint)
+
+              Toast.show({
+                text: "Fingerprint has been copied to your clipboard",
+                textStyle: {
+                  fontSize: 14,
                   paddingLeft: 10,
-                  marginLeft: 20,
-                  marginBottom: 10,
-                  width: 110,
-                  borderRadius: 3,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "white",
-                    fontFamily: "Trebuchet",
-                    fontSize: 13,
-                  }}
-                >
-                  Not distributed
-                </Text>
-              </View>
-            )}
+                },
+                duration: 4000,
+                style: {
+                  backgroundColor: "#9DC828",
+                },
+                onClose: () => {
+                  dispatch(authActions.clearToastMessage());
+                },
+              });
+            
+            }}
+            style={{
+              width: "50%",
+              backgroundColor: "#00000015",
+              paddingTop: 5,
+              paddingBottom: 5,
+              paddingLeft: 10,
+              paddingRight: 10,
+              marginLeft:20,
+            
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontFamily: "Trebuchet",
+                fontSize: 13,
+              }}
+            >
+             Copy Fingerprint
+            </Text>
+          </TouchableOpacity>
+
           </View>
 
           <View
@@ -182,7 +185,7 @@ function Uploads(props) {
                       onPress: () => {
                         axios
                           .delete(
-                            `https://web.gocreateafrica.app/api/v1/songs/details/${item.id}`,
+                            `https://web.gocreateafrica.app/api/v1/songs/details/${item.id}/`,
                             {
                               headers: {
                                 "Access-Control-Allow-Origin": "*",

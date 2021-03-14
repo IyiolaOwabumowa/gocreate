@@ -383,11 +383,12 @@ const Dashboard = (props) => {
         />
         <View style={{ marginBottom: 30 }}></View>
 
-        <LineGraph
-          chartName={"Yearly Play Count"}
-          chartData={chartData && chartData}
-          monthData={monthData && monthData}
-        />
+        {/*
+    <LineGraph
+         chartName={"Yearly Play Count"}
+         chartData={chartData && chartData}
+         monthData={monthData && monthData}
+        /> */}
 
         {adverts && (
           <TouchableOpacity

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { TextInputMask } from "react-native-masked-text";
+import DropDownPicker from "react-native-dropdown-picker";
 import IntlPhoneInput from "react-native-intl-phone-input";
 import {
   StyleSheet,
@@ -351,22 +352,30 @@ function AddRoyalty() {
           Which song do you want to add this royalty to?
         </Text>
       </View>
+
       <View style={{marginLeft:20, marginRight:20, marginTop:20}}>
-      <Picker
-        selectedValue={song}
-        onValueChange={(itemValue, itemIndex) => {
-          setsong(itemValue);
-        }}
-        itemStyle={{color:"white"}}
-      >
-        <Picker.Item label={"None"} value={"None"} key={0} />
-        {songList.map((item) => {
-          return (
-            <Picker.Item label={item.value} value={item.id} key={item.id} />
-          );
-        })}
-      </Picker>
+      
       </View>
+
+      <DropDownPicker
+      items={songList && songList}
+      placeholder="Select Song"
+      selectedLabelStyle={{ color: "white" }}
+      placeholderStyle={{ color: "white" }}
+      containerStyle={{ height: 80 }}
+      style={{ backgroundColor: "#ffffff10", margin: 15, borderWidth: 0 }}
+      itemStyle={{
+        justifyContent: "flex-start",
+      }}
+      dropDownStyle={{ backgroundColor: "#fafafa" }}
+      onChangeItem={(item) =>
+        // this.setState({
+        //   country: item.value,
+        // })
+        setsong(item.value)
+      } />
+      
+    
 
       <Button
         style={{

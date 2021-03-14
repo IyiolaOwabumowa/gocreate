@@ -62,7 +62,8 @@ function Subscriptions(props) {
   const [spFound, setSpFound] = useState(false);
   const [epFound, setEpFound] = useState(false);
   const [alFound, setAlFound] = useState(false);
- 
+  
+  const [soon, setSoon] = useState(true);
   useEffect(() => {
     dispatch(userActions.getArtist(token));
     dispatch(subscriptionActions.getAvailableSubscriptions(token));
@@ -78,6 +79,27 @@ function Subscriptions(props) {
     );
   }
 
+if(soon){
+  return (
+    <ScrollView
+    style={{ backgroundColor: "#101820FF" }}
+    contentContainerStyle={styles.containerNoPayouts}
+  >
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+    <MaterialCommunityIcons
+    name="contactless-payment"
+    size={20}
+    color="white"
+  />
+      <Text
+        style={{ fontFamily: "Trebuchet", color: "white", padding: 20 }}
+      >
+       The distribution feature is coming soon
+      </Text>
+    </View>
+  </ScrollView>
+  )
+}
   return (
     <ScrollView
       style={{ backgroundColor: "#101820FF" }}

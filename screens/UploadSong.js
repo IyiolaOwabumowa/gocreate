@@ -442,6 +442,7 @@ function UploadSong(props) {
       })
       .catch(function (error) {
         setLoading(false)
+        Alert.alert(error.message)
         console.log(
           "There has been a problem with your fetch operation: " + error.message
         );
