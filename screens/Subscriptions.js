@@ -71,6 +71,7 @@ function Subscriptions(props) {
     }, [isFocused]);
 
   function packageExists(packageid) {
+    console.log("test")
     return (
       artist_subscriptions &&
       artist_subscriptions.data.results.some(function (el) {

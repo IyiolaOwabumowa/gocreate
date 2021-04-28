@@ -408,7 +408,7 @@ function UploadSong(props) {
       `https://web.gocreateafrica.app/api/v1/songs/new/${albums[0].id}/`,
       {
         headers: {
-          "Content-Type": "multipart/form-data",
+         
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
@@ -1176,7 +1176,7 @@ function UploadSong(props) {
               fontSize: 13,
             }}
           >
-            Publish Song
+            Upload Song
           </Text>
         )}
       </Button>

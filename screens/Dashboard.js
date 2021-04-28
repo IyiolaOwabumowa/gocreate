@@ -2,6 +2,7 @@ import React, { useState, useEffect, useLayoutEffect } from "react";
 //import * as Linking from "expo-linking";
 //import * as WebBrowser from "expo-web-browser";
 import { useSelector, useDispatch } from "react-redux";
+import Video from "react-native-video"
 import { Spinner } from "native-base";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { authActions } from "../src/actions/auth.actions";
@@ -403,6 +404,15 @@ const Dashboard = (props) => {
             />
           </TouchableOpacity>
         )}
+
+        <Video
+          source={{ uri: 'https://vimeo.com/526163145' }}
+          style={styles.backgroundVideo}
+          controls={false}
+          muted={true}
+          ref={(ref) => {
+          const player = ref
+          }} />
         {/* 
         {adverts &&
           adverts.data.results.map((item) => {
@@ -435,6 +445,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 22,
   },
+
+  backgroundVideo: {
+    position: 'absolute',
+    height: 200, width: "100%", 
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+  },
+
   modalView: {
     margin: 20,
     backgroundColor: "#fff",

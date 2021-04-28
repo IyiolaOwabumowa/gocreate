@@ -142,7 +142,7 @@ function Uploads(props) {
             
             }}
             style={{
-              width: "50%",
+              width: "100%",
               backgroundColor: "#00000015",
               paddingTop: 5,
               paddingBottom: 5,
