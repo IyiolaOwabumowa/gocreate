@@ -87,40 +87,28 @@ async function updateProfile(
 
 function getArtist(token) {
   return axios
-    .get(
-      "https://web.gocreateafrica.app/api/v1/accounts/user/",
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
+    .get("https://web.gocreateafrica.app/api/v1/accounts/user/", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        Authorization: `Bearer ${token}`,
+      },
+    })
     .then((response) => {
       const successObject = { data: response.data };
-      //  const token = res.data.token;
-      //  const id = 1;
-      //  const auth = {id, token}
-      //  return auth;
-       return successObject;
+      return successObject;
     })
     .catch((error) => {
-      //console.log(error.response);
+      // console.log(error)
       if (error.response) {
-        // Request made and server responded
         const values = Object.values(error.response.data);
         const errorObject = {
           status: error.response.status,
-          error: error.response.data.message,
+          error: error.response.data,
         };
-        // for (const value of values) {
-        //   console.log(value[0])
-        // }
-
-        return errorObject;
+        //Promise.reject(errorObject);
+        // return errorObject
+        throw errorObject;
       }
-
-      Promise.reject(error);
     });
 }
 

@@ -5,15 +5,32 @@ const initialState = {
     bvn_verified: null,
     phone_verified: null,
     dp: { id: null, image: null },
+    first_name: null,
+    loading: true,
   },
+  mode: "light",
 };
 
 export default function userReducer(state = initialState, action) {
   switch (action.type) {
+    case userConstants.SET_APPEARANCE:
+      return {
+        ...state,
+        mode: action.mode,
+      };
+
     case userConstants.GET_ARTIST:
-      return { 
+      return {
         ...state,
         artist: action.artist.data,
+        loading: false,
+      };
+
+    case userConstants.GET_ARTIST_FAILURE:
+      return {
+        ...state,
+        authorized: action.authorized,
+        loading: false,
       };
     case userConstants.DELETE_ARTIST:
       return {

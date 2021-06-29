@@ -68,7 +68,7 @@ const MonitorUploads = (props) => {
               style={{
                 textAlign: "center",
                 color: "#000",
-                fontFamily: "Trebuchet",
+                
               }}
             >
               Creative Content Upload
@@ -87,7 +87,7 @@ const MonitorUploads = (props) => {
             style={{
               textAlign: "center",
               color: "#000",
-              fontFamily: "Trebuchet",
+              
               marginBottom: 50,
             }}
           >
@@ -101,7 +101,7 @@ const MonitorUploads = (props) => {
               style={{
                 textAlign: "center",
                 color: "#000",
-                fontFamily: "Trebuchet",
+                
                 paddingBottom: 15,
               }}
             >
@@ -201,18 +201,18 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#000",
-    fontFamily:"Trebuchet",
+    
     paddingLeft: 20,
     paddingRight: 20,
     marginTop: 10,
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+    
     marginTop: 30,
     marginBottom: 20,
     textAlign: "center",

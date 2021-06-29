@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#000",
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#000",
-    fontFamily: "Trebuchet",
+    
     fontSize: 15,
     marginTop: 10,
     marginBottom: 20,

@@ -16,31 +16,15 @@ import {
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
 import { Toast, Spinner } from "native-base";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Button, Input, Item } from "native-base";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faTv,
-  faPodcast,
-  faStream,
-  faPlay,
-  faPlayCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import * as Progress from "react-native-progress";
 import { useIsFocused } from "@react-navigation/native";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  FontAwesome,
-} from "@expo/vector-icons";
+import AntDesign from "react-native-vector-icons/AntDesign";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+
 import { ScrollView, FlatList } from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
-import { MaterialIcons } from "@expo/vector-icons";
-import Clipboard from '@react-native-community/clipboard';
-
+import Clipboard from "@react-native-community/clipboard";
 
 const width = Dimensions.get("window").width;
 
@@ -49,17 +33,14 @@ function Uploads(props) {
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState("");
   const token = useSelector((state) => state.authReducer.token);
+
+  const artist = useSelector((state) => state.userReducer.artist);
+  const mode = useSelector((state) => state.userReducer.mode);
   const songs = useSelector((state) =>
     state.songReducer.songs ? state.songReducer.songs : null
   );
   const loading = useSelector((state) => state.songReducer.loading);
   const focused = useIsFocused();
-  useEffect(() => {
-    if (focused) {
-      dispatch(songActions.getSongs(token));
-      console.log(songs.data.results.fingerprint)
-    }
-  }, [JSON.stringify(songs), focused]);
 
   useEffect(() => {}, [success]);
 
@@ -68,14 +49,23 @@ function Uploads(props) {
       var count = 0;
       var arr = songs.data.results;
       for (var i = 0; i < arr.length; i++) {
-        if (arr[i].subscription == null && item == "Unassigned") {
+        if (arr[i].subscriptions.length == 0 && item == "Unassigned") {
           count = count + 1;
         }
-        if (
-          arr[i].subscription != null &&
-          arr[i].subscription.package.title == item
-        ) {
-          count = count + 1;
+        if (arr[i].subscriptions.length != 0) {
+          console.log(arr[i].subscriptions[0].package.title);
+          if (arr[i].subscriptions.length == 1) {
+            if (arr[i].subscriptions[0].package.title == item) {
+              count = count + 1;
+            }
+          }
+          if (arr[i].subscriptions.length > 1) {
+            for (var j = 0; j < arr[i].subscriptions.length; j++) {
+              if (arr[i].subscriptions[j].package.title == item) {
+                count = count + 1;
+              }
+            }
+          }
         }
       }
       return count;
@@ -86,7 +76,7 @@ function Uploads(props) {
     return (
       <View
         style={{
-          backgroundColor: "#ffffff40",
+          backgroundColor: mode == "light" ? "#fff" : "#ffffff40",
 
           borderLeftColor: "#9DC828",
           borderLeftWidth: 3,
@@ -108,8 +98,7 @@ function Uploads(props) {
           <View style={{}}>
             <Text
               style={{
-                fontFamily: "Trebuchet",
-                color: "#fff",
+                color: mode == "light" ? "#000" : "#fff",
                 paddingLeft: 20,
                 paddingTop: 10,
                 paddingBottom: 10,
@@ -118,51 +107,47 @@ function Uploads(props) {
             >
               {item.title} ({item.file_size})
             </Text>
-        
-            <TouchableOpacity
-            activeOpacity={0.8}
-            onPress= {()=>{
-              console.log(item.fingerprint)
-              Clipboard.setString(item.fingerprint)
 
-              Toast.show({
-                text: "Fingerprint has been copied to your clipboard",
-                textStyle: {
-                  fontSize: 14,
-                  paddingLeft: 10,
-                },
-                duration: 4000,
-                style: {
-                  backgroundColor: "#9DC828",
-                },
-                onClose: () => {
-                  dispatch(authActions.clearToastMessage());
-                },
-              });
-            
-            }}
-            style={{
-              width: "100%",
-              backgroundColor: "#00000015",
-              paddingTop: 5,
-              paddingBottom: 5,
-              paddingLeft: 10,
-              paddingRight: 10,
-              marginLeft:20,
-            
-            }}
-          >
-            <Text
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                Clipboard.setString(item.fingerprint);
+
+                Toast.show({
+                  text: "Fingerprint has been copied to your clipboard",
+                  textStyle: {
+                    fontSize: 14,
+                    paddingLeft: 10,
+                  },
+                  duration: 4000,
+                  style: {
+                    backgroundColor: "#9DC828",
+                  },
+                  onClose: () => {
+                    dispatch(authActions.clearToastMessage());
+                  },
+                });
+              }}
               style={{
-                color: "white",
-                fontFamily: "Trebuchet",
-                fontSize: 13,
+                width: "100%",
+                backgroundColor: "#00000015",
+                paddingTop: 5,
+                paddingBottom: 5,
+                paddingLeft: 10,
+                paddingRight: 10,
+                marginLeft: 20,
               }}
             >
-             Copy Fingerprint
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  color: mode == "light" ? "#000" : "white",
 
+                  fontSize: 13,
+                }}
+              >
+                Copy Fingerprint
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View
@@ -195,6 +180,7 @@ function Uploads(props) {
                           )
                           .then((response) => {
                             const successObject = { data: "Delete Successful" };
+                            dispatch(songActions.getSongs(token));
                             Alert.alert("Deletion Successful");
                             setSuccess("Deletion Successful");
                             //  const token = res.data.token;
@@ -233,7 +219,11 @@ function Uploads(props) {
                 );
               }}
             >
-              <MaterialIcons name="cancel" size={27} color="white" />
+              <MaterialIcons
+                name="cancel"
+                size={27}
+                color={mode == "light" ? "#00000030" : "white"}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -250,21 +240,17 @@ function Uploads(props) {
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#101820FF",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <View style={styles[`container${mode}`]}>
+      <StatusBar
+        barStyle={mode == "light" ? "dark-content" : "light-content"}
+      />
       {loading ? (
         <Spinner color="#fff" size="small" />
       ) : (
         <FlatList
           showsVerticalScrollIndicator={false}
           data={songs && songs.data.results}
-          style={styles.container}
+          style={styles[(`container${mode}`, { width: "100%" })]}
           contentContainerStyle={{
             alignItems: "center",
           }}
@@ -274,7 +260,8 @@ function Uploads(props) {
                 style={{
                   backgroundColor: "#9DC828",
                   width: width,
-                  height: 40,
+                  paddingLeft: 10,
+                  height: 50,
                   justifyContent: "center",
                 }}
                 activeOpacity={0.8}
@@ -292,8 +279,7 @@ function Uploads(props) {
                 >
                   <Text
                     style={{
-                      fontFamily: "Trebuchet",
-                      color: "white",
+                      color: mode == "light" ? "white" : "black",
                       padding: 10,
                       fontSize: 14,
                     }}
@@ -302,9 +288,17 @@ function Uploads(props) {
                   </Text>
                   <View style={{ marginRight: 30 }}>
                     {open ? (
-                      <AntDesign name="down" size={14} color="white" />
+                      <AntDesign
+                        name="down"
+                        size={14}
+                        color={mode == "light" ? "white" : "black"}
+                      />
                     ) : (
-                      <AntDesign name="right" size={14} color="white" />
+                      <AntDesign
+                        name="right"
+                        size={14}
+                        color={mode == "light" ? "white" : "black"}
+                      />
                     )}
                   </View>
                 </View>
@@ -317,7 +311,7 @@ function Uploads(props) {
             <>
               <View
                 style={{
-                  backgroundColor: "#010114",
+                  backgroundColor: mode == "light" ? "#fff" : "#111111",
                   width: width - 30,
                   marginTop: 20,
                   borderRadius: 5,
@@ -332,8 +326,7 @@ function Uploads(props) {
                 >
                   <Text
                     style={{
-                      fontFamily: "Trebuchet",
-                      color: "white",
+                      color: mode == "light" ? "black" : "white",
                       padding: 20,
                       fontSize: 18,
                     }}
@@ -344,17 +337,17 @@ function Uploads(props) {
                     in Singles
                   </Text>
                   <View style={{ marginRight: 20 }}>
-                    <SimpleLineIcons
+                    {/* <SimpleLineIcons
                       name={"music-tone"}
                       size={24}
-                      color="#fff"
-                    />
+                      color={mode == "light" ? "black" : "white"}
+                    /> */}
                   </View>
                 </View>
               </View>
               <View
                 style={{
-                  backgroundColor: "#010114",
+                  backgroundColor: mode == "light" ? "#fff" : "#111111",
                   width: width - 30,
                   marginTop: 20,
                   borderRadius: 5,
@@ -369,29 +362,28 @@ function Uploads(props) {
                 >
                   <Text
                     style={{
-                      fontFamily: "Trebuchet",
-                      color: "white",
+                      color: mode == "light" ? "black" : "white",
                       padding: 20,
                       fontSize: 18,
                     }}
                   >
-                    {countItem("Ep") == 1
-                      ? countItem("Ep") + " song"
-                      : countItem("Ep") + " songs"}{" "}
+                    {countItem("EP") == 1
+                      ? countItem("EP") + " song"
+                      : countItem("EP") + " songs"}{" "}
                     in EPs
                   </Text>
                   <View style={{ marginRight: 20 }}>
-                    <MaterialCommunityIcons
+                    {/* <MaterialCommunityIcons
                       name="playlist-music-outline"
                       size={24}
-                      color="#fff"
-                    />
+                      color={mode == "light" ? "black" : "white"}
+                    /> */}
                   </View>
                 </View>
               </View>
               <View
                 style={{
-                  backgroundColor: "#010114",
+                  backgroundColor: mode == "light" ? "#fff" : "#111111",
                   width: width - 30,
                   marginTop: 20,
                   borderRadius: 5,
@@ -406,8 +398,7 @@ function Uploads(props) {
                 >
                   <Text
                     style={{
-                      fontFamily: "Trebuchet",
-                      color: "white",
+                      color: mode == "light" ? "black" : "white",
                       padding: 20,
                       fontSize: 18,
                     }}
@@ -418,14 +409,18 @@ function Uploads(props) {
                     in Albums
                   </Text>
                   <View style={{ marginRight: 20 }}>
-                    <Entypo name="folder-music" size={24} color="#fff" />
+                    {/* <Entypo
+                      name="folder-music"
+                      size={24}
+                      color={mode == "light" ? "black" : "white"}
+                    /> */}
                   </View>
                 </View>
               </View>
 
               <View
                 style={{
-                  backgroundColor: "#010114",
+                  backgroundColor: mode == "light" ? "#fff" : "#111111",
                   width: width - 30,
                   marginTop: 20,
                   borderRadius: 5,
@@ -440,8 +435,7 @@ function Uploads(props) {
                 >
                   <Text
                     style={{
-                      fontFamily: "Trebuchet",
-                      color: "white",
+                      color: mode == "light" ? "black" : "white",
                       padding: 20,
                       fontSize: 18,
                     }}
@@ -452,13 +446,64 @@ function Uploads(props) {
                     Unassigned
                   </Text>
                   <View style={{ marginRight: 20 }}>
-                    <SimpleLineIcons
+                    {/* <SimpleLineIcons
                       name={"music-tone"}
                       size={24}
-                      color="#fff"
-                    />
+                      color={mode == "light" ? "black" : "white"}
+                    /> */}
                   </View>
                 </View>
+              </View>
+
+              <View
+                style={{
+                  height: 300,
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: mode == "light" ? "#fff" : "#111111",
+                  width: width - 30,
+                  marginTop: 20,
+                  borderRadius: 5,
+                }}
+              >
+                <Progress.Circle
+                  progress={
+                    artist.storage.used_space / artist.storage.total_space
+                  }
+                  size={170}
+                  indeterminate={false}
+                  color={"#9DC828"}
+                  borderWidth={2}
+                  showsText={true}
+                  strokeCap="round"
+                  thickness={7}
+                  animated={true}
+                  formatText={() => {
+                    return (
+                      (
+                        (artist.storage.used_space /
+                          artist.storage.total_space) *
+                        100
+                      ).toFixed(2) + "%"
+                    );
+                  }}
+                />
+
+                <Text
+                  style={{
+                    color: mode == "light" ? "black" : "white",
+                    paddingTop: 20,
+                    fontSize: 14,
+                    textAlign: "center",
+                    lineHeight: 30,
+                  }}
+                >
+                  Used storage space: {"\n"}{" "}
+                  {artist.storage.used_space.toFixed(2)}
+                  {"MB"} out of {artist.storage.total_space}
+                  {"MB"}
+                </Text>
               </View>
             </>
           }
@@ -472,9 +517,13 @@ function Uploads(props) {
 export default Uploads;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor: "#101820FF",
+    backgroundColor: "#00000010",
+  },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000000",
   },
   containerNoRoyalty: {
     flex: 1,
@@ -529,7 +578,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -539,7 +587,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

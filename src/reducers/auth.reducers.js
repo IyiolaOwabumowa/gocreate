@@ -6,6 +6,7 @@ const initialState = {
   toastMessage: null,
   isPassword: false,
   registered: false,
+  authorized: false,
 };
 
 export default function authReducer(state = initialState, action) {

@@ -18,15 +18,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { Spinner } from "native-base";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Button, Input, Item } from "native-base";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  FontAwesome,
-} from "@expo/vector-icons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import SimpleLineIcons from "react-native-vector-icons/SimpleLineIcons";
+
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
 import { ScrollView } from "react-native-gesture-handler";
@@ -38,6 +32,8 @@ function Royalties(props) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.authReducer.token);
   const successMessage = useSelector((state) => state.songReducer.message);
+  const mode = useSelector((state) => state.userReducer.mode);
+
   const songs = useSelector((state) =>
     state.songReducer.songs ? state.songReducer.songs : null
   );
@@ -45,21 +41,24 @@ function Royalties(props) {
     state.songReducer.songs ? state.songReducer.songs.royalties : null
   );
   const isFocused = useIsFocused();
-  useEffect(() => {
-    dispatch(songActions.getSongs(token));
-    console.log(isFocused);
-  }, [isFocused]);
-
-  // const deleteRoyalty = ()=>{
-
-  // }
+  const [foundRoyalty, setFoundRoyalty] = useState(true);
 
   useEffect(() => {
     if (successMessage) {
-      Alert.alert(successMessage);
       dispatch(songActions.getSongs(token));
     }
   }, [successMessage]);
+
+  useEffect(() => {
+    const filteredRoyalties = songs.data.results.filter(
+      (song) => song.royalties.length != 0
+    );
+    if (filteredRoyalties.length != 0) {
+      setFoundRoyalty(true);
+    } else {
+      setFoundRoyalty(false);
+    }
+  }, [songs]);
 
   const royalty = ({ item }) => {
     if (item) {
@@ -90,20 +89,35 @@ function Royalties(props) {
         >
           <View
             style={{
-              marginRight: 5,
-              marginBottom: 20,
-              backgroundColor: "#9DC828",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "row",
+              marginBottom: 15,
+              backgroundColor: "#cdcdcd",
               paddingLeft: 10,
-              paddingRight: 10,
+              paddingRight: 0,
               borderRadius: 3,
-              paddingTop: 1,
-              paddingBottom: 1,
+              marginRight: 10,
             }}
           >
-            <Text style={{ fontFamily: "Trebuchet", color: "black" }}>
+            <Text style={{ color: "black", paddingRight: 10 }}>
               {item.description} {item.share}
               {"%"}
             </Text>
+            <View
+              style={{
+                backgroundColor: mode == "light" ? "#000" : "#212121",
+
+                paddingTop: 5,
+                paddingBottom: 5,
+                paddingLeft: 5,
+                paddingRight: 5,
+                borderTopRightRadius: 3,
+                borderBottomRightRadius: 3,
+              }}
+            >
+              <SimpleLineIcons name="close" size={17} color="white" />
+            </View>
           </View>
         </TouchableOpacity>
       );
@@ -114,13 +128,12 @@ function Royalties(props) {
     return (
       <View
         style={{
-          backgroundColor: "#010114",
-
+          backgroundColor: mode == "light" ? "#fff" : "#11111120",
           width: width,
           marginBottom: 10,
           paddingLeft: 20,
           borderBottomWidth: 0.4,
-          borderBottomColor: "#ffffff40",
+          borderBottomColor: mode == "light" ? "#00000030" : "#ffffff40",
         }}
       >
         <View
@@ -136,15 +149,14 @@ function Royalties(props) {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingTop: 20,
-                paddingBottom: 20,
+                paddingTop: 10,
+
                 marginBottom: 10,
               }}
             >
               <Text
                 style={{
-                  fontFamily: "Trebuchet",
-                  color: "white",
+                  color: mode == "light" ? "black" : "white",
 
                   fontSize: 15,
                 }}
@@ -171,16 +183,16 @@ function Royalties(props) {
               }}
               activeOpacity={0.8}
               style={{
-                backgroundColor: "#9DC828",
-                height: 40,
-                width: 40,
-                borderRadius: 3,
-                marginRight: 10,
+                width: 70,
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
-              <SimpleLineIcons name="pencil" size={17} color="black" />
+              <SimpleLineIcons
+                name="pencil"
+                size={20}
+                color={mode == "light" ? "black" : "white"}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -194,16 +206,26 @@ function Royalties(props) {
     }
   };
 
-  if (songs.data.results.length == 0) {
+  if (!foundRoyalty) {
     return (
       <ScrollView
-        style={{ backgroundColor: "#101820FF" }}
-        contentContainerStyle={styles.containerNoRoyalty}
+        style={{ backgroundColor: mode == "light" ? "#fff" : "#000" }}
+        contentContainerStyle={styles[`container${mode}`]}
       >
+        <StatusBar
+          barStyle={mode == "light" ? "dark-content" : "light-content"}
+        />
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <FontAwesome5 name={"signature"} size={20} color="white" />
+          <FontAwesome5
+            name={"signature"}
+            size={20}
+            color={mode == "light" ? "black" : "white"}
+          />
           <Text
-            style={{ fontFamily: "Trebuchet", color: "white", padding: 20 }}
+            style={{
+              color: mode == "light" ? "black" : "white",
+              padding: 20,
+            }}
           >
             You have no royalties
           </Text>
@@ -212,21 +234,17 @@ function Royalties(props) {
     );
   } else {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#101820FF",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles[`container${mode}`]}>
+        <StatusBar
+          barStyle={mode == "light" ? "dark-content" : "light-content"}
+        />
         <FlatList
           showsVerticalScrollIndicator={false}
           data={songs && songs.data.results}
-          style={styles.container}
-          contentContainerStyle={{
-            alignItems: "center",
-          }}
+          // style={styles[`container${mode}`]}
+          // contentContainerStyle={{
+          //   alignItems: "center",
+          // }}
           ListHeaderComponent={<></>}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
@@ -240,16 +258,19 @@ function Royalties(props) {
 export default Royalties;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor: "#101820FF",
-  },
-  containerNoRoyalty: {
-    flex: 1,
-    backgroundColor: "#101820FF",
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
   },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   kContainer: {
     flex: 1,
     justifyContent: "center",
@@ -297,7 +318,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -307,7 +327,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

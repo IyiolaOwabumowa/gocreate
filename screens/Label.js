@@ -26,15 +26,7 @@ import {
   faPlay,
   faPlayCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  Ionicons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+
 import { ScrollView } from "react-native-gesture-handler";
 
 const width = Dimensions.get("window").width;
@@ -79,7 +71,7 @@ function Label(props) {
             style={{
               textAlign: "center",
               color: "white",
-              fontFamily: "Trebuchet",
+              
               fontSize: 13,
               marginBottom: 20,
               alignItems: "center",
@@ -106,7 +98,7 @@ function Label(props) {
               style={{
                 textAlign: "center",
                 color: "white",
-                fontFamily: "Trebuchet",
+                
                 fontSize: 13,
               }}
             >
@@ -135,12 +127,12 @@ function Label(props) {
             alignItems: "center",
           }}
         >
-          <MaterialIcons name="library-music" size={24} color="white" />
+          {/* <MaterialIcons name="library-music" size={24} color="white" /> */}
           <Text
             style={{
               textAlign: "center",
               color: "white",
-              fontFamily: "Trebuchet",
+              
               fontSize: 15,
               padding: 20,
             }}
@@ -156,7 +148,7 @@ function Label(props) {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text style={{  color: "white", fontSize: 16 }}>
           Song Title
         </Text>
         <View
@@ -177,7 +169,7 @@ function Label(props) {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text style={{  color: "white", fontSize: 16 }}>
           Artist Name
         </Text>
         <View
@@ -197,7 +189,7 @@ function Label(props) {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text style={{  color: "white", fontSize: 16 }}>
           Record Label
         </Text>
         <View
@@ -217,7 +209,7 @@ function Label(props) {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text style={{  color: "white", fontSize: 16 }}>
           Year of Release
         </Text>
         <View
@@ -246,7 +238,7 @@ function Label(props) {
           style={{
             textAlign: "center",
             color: "white",
-            fontFamily: "Trebuchet",
+            
             fontSize: 13,
           }}
         >
@@ -265,7 +257,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
     fontSize: 16,
   },
   containerNoRoyalty: {
@@ -317,7 +309,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#F46270",
@@ -327,7 +319,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+    
     marginLeft: 20,
     marginTop: 20,
   },

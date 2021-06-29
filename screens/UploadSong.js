@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { Picker } from "@react-native-community/picker";
-import * as DocumentPicker from "expo-document-picker";
-
+import DocumentPicker from "react-native-document-picker";
+import {
+  launchCamera,
+  launchImageLibrary,
+  ImagePicker,
+} from "react-native-image-picker";
 import {
   StyleSheet,
   StatusBar,
@@ -10,43 +14,27 @@ import {
   Image,
   ImageBackground,
   Dimensions,
-  TouchableOpacity,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
   TextInput,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
-import { Toast, Spinner, DatePicker } from "native-base";
+import { Toast, Spinner } from "native-base";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Button, Item } from "native-base";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faTv,
-  faPodcast,
-  faStream,
-  faPlay,
-  faPlayCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  Ionicons,
-  MaterialIcons,
-} from "@expo/vector-icons";
 import DropDownPicker from "react-native-dropdown-picker";
-import { ScrollView, TouchableHighlight } from "react-native-gesture-handler";
+import {
+  ScrollView,
+  TouchableHighlight,
+  TouchableOpacity,
+} from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
 import axios from "axios";
-import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import * as Permissions from "expo-permissions";
 import moment from "moment";
+import { userActions } from "../src/actions/user.actions";
 
 const width = Dimensions.get("window").width;
 const songSelected = null;
@@ -54,6 +42,7 @@ const songSelected = null;
 function UploadSong(props) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.authReducer.token);
+  const mode = useSelector((state) => state.userReducer.mode);
   const [label, setLabel] = useState("None");
   const [labels, setLabels] = useState(null);
   const [image, setImage] = useState(null);
@@ -76,9 +65,21 @@ function UploadSong(props) {
   const [showLabelPicker, setShowLabelPicker] = useState(true);
   const [showLabelAdd, setShowLabelAdd] = useState(false);
   const [createdLabelId, setCreatedLabelId] = useState(null);
+  const [date1, setDate1] = useState(new Date(1598051730000));
+  const [date2, setDate2] = useState(new Date(1598051730000));
+  const [date3, setDate3] = useState(new Date(1598051730000));
+  const [show, setShow] = useState(false);
 
-  
-    
+  let options = {
+    title: "Select Image",
+    customButtons: [
+      { name: "customOptionKey", title: "Choose Photo from Custom Option" },
+    ],
+    storageOptions: {
+      skipBackup: true,
+      path: "images",
+    },
+  };
 
   useEffect(() => {
     getLabels();
@@ -97,9 +98,6 @@ function UploadSong(props) {
 
   useEffect(() => {
     getAlbums();
-
-    // console.log(albums[0].id);
-    // console.log(token)
   }, [JSON.stringify(albums)]);
 
   const generateGenreDrop = () => {
@@ -128,18 +126,6 @@ function UploadSong(props) {
       }
     }
   };
-  // genres &&
-  // genres.map((item) => {
-  //   console.log({ label: item.title, value: item.title });
-  //   return { label: item.title, value: item.title } + ", ";
-
-  //   // <Picker.Item
-  //   //   label={item.title}
-  //   //   style={{ color: "#fff" }}
-  //   //   value={item.title}
-  //   //   key={item.id}
-  //   // />
-  // }),
 
   const getLabels = () => {
     return axios
@@ -290,7 +276,7 @@ function UploadSong(props) {
         //   ]
         // );
         setCreatedLabelId(response.data.id);
-        return response.data.id
+        return response.data.id;
       })
       .catch(function (error) {
         if (error.response) {
@@ -303,7 +289,7 @@ function UploadSong(props) {
           // for (const value of values) {
           //   console.log(value[0])
           // }
-          console.log(error.response.data.message);
+          //console.log(error.response.data.message);
           return errorObject;
         }
       });
@@ -317,22 +303,40 @@ function UploadSong(props) {
   };
 
   const choosePhotoFromLibrary = async () => {
-    try {
-      getPermissionAsync();
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: false,
-        aspect: [4, 3],
-        quality: 1,
-      });
-      if (!result.cancelled) {
-        setImage(result.uri);
+    // try {
+    //   getPermissionAsync();
+    //   let result = await ImagePicker.launchImageLibraryAsync({
+    //     mediaTypes: ImagePicker.MediaTypeOptions.All,
+    //     allowsEditing: false,
+    //     aspect: [4, 3],
+    //     quality: 1,
+    //   });
+    //   if (!result.cancelled) {
+    //     setImage(result.uri);
+    //   }
+    // } catch (E) {
+    //   console.log(E);
+    // }
+
+    launchImageLibrary(options, (response) => {
+      // console.log("Response = ", response);
+
+      if (response.didCancel) {
+        // alert("User cancelled camera picker");
+        return;
+      } else if (response.errorCode == "camera_unavailable") {
+        //alert("Camera not available on device");
+        return;
+      } else if (response.errorCode == "permission") {
+        // alert("Permission not satisfied");
+        return;
+      } else if (response.errorCode == "others") {
+        // alert(response.errorMessage);
+        return;
       }
 
-      console.log(result);
-    } catch (E) {
-      console.log(E);
-    }
+      setImage(response.assets[0].uri);
+    });
   };
 
   const uploadSong = (
@@ -347,109 +351,140 @@ function UploadSong(props) {
     file,
     cover
   ) => {
-    
-
     const removeTime = (fulldate) => {
       let d = new Date(fulldate);
       d = d.toISOString().split("T")[0];
       return d;
     };
 
-  console.log("label", label , "artist name",
-  artist_name , 
-  "title",
-  title , "genre ",
-  genre, 
-  "availability",
-  access_availability , 
-  "file ",
-  file , "cover", 
-  cover )
+    // console.log(
+    //   "label",
+    //   label,
+    //   "artist name",
+    //   artist_name,
+    //   "title",
+    //   title,
+    //   "genre ",
+    //   genre,
+    //   "availability",
+    //   access_availability,
+    //   "file ",
+    //   file,
+    //   "cover",
+    //   cover
+    // );
 
-   if(label != "None" ||
+    if (
+      label != "None" ||
       artist_name != "" ||
       title != "" ||
-      genre != "None"  ||
+      genre != "None" ||
       access_availability != "None" ||
-      file != null||
-      cover != null){
+      file != null ||
+      cover != null
+    ) {
+      setLoading(true);
 
-    setLoading(true);
-    
-    const data = new FormData();
-    let uriParts = cover.split(".");
-    let fileType = uriParts[uriParts.length - 1];
-    let musicUriParts = file.split(".");
-    let musicFileType = musicUriParts[musicUriParts.length - 1];
+      const data = new FormData();
+      const validateSong = new FormData();
+      let uriParts = cover.split(".");
+      let fileType = uriParts[uriParts.length - 1];
+      let musicUriParts = file.split(".");
+      let musicFileType = musicUriParts[musicUriParts.length - 1];
 
-    data.append("label", label);
-    data.append("artist_name", artist_name);
-    data.append("title", title);
-    data.append("description", title);
-    data.append("genres", genre);
-    data.append("access_availability", access_availability);
-    data.append("preSalesDate", "2020-10-30");
-    data.append("releaseStartDate", "2020-10-30");
-    data.append("releaseEndDate", "2020-10-30");
-    data.append("file", {
-      uri: file,
-      name: `recording.${musicFileType}`,
-      type: `audio/${musicFileType}`,
-    });
-    data.append("cover", {
-      uri: cover,
-      type: `image/${fileType}`,
-      name: `image.${fileType}`,
-    });
+      data.append("label", label);
+      data.append("artist_name", artist_name);
+      data.append("title", title);
+      data.append("description", title);
+      data.append("genres", genre);
+      data.append("access_availability", access_availability);
+      data.append("preSalesDate", chosenDate1);
+      data.append("releaseStartDate", chosenDate2);
+      data.append("releaseEndDate", chosenDate3);
+      data.append("file", {
+        uri: file,
+        name: `recording.${musicFileType}`,
+        type: `audio/${musicFileType}`,
+      });
+      data.append("cover", {
+        uri: cover,
+        type: `image/${fileType}`,
+        name: `image.${fileType}`,
+      });
+      validateSong.append("audio", {
+        uri: file,
+        name: `recording.${musicFileType}`,
+        type: `audio/${musicFileType}`,
+      });
+      // console.log(data);
 
-    console.log(data);
-
-    return fetch(
-      `https://web.gocreateafrica.app/api/v1/songs/new/${albums[0].id}/`,
-      {
+      fetch("https://web.gocreateafrica.app/api/v1/songs/validate/", {
         headers: {
-         
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
-        body: data,
-      }
-    )
-      .then((response) => {
-        setLoading(false);
-        // const successObject = { status: response.status, data: response.data };
-        // Alert.alert(response);
-        console.log(response.status == 200);
-        if (response.status == 200) {
-          Toast.show({
-            text: "We've uploaded your song successfully",
-            textStyle: {
-              fontSize: 14,
-              paddingLeft: 10,
-            },
-            duration: 4000,
-            style: {
-              backgroundColor: "#9DC828",
-            },
-            onClose: () => {
-              dispatch(authActions.clearToastMessage());
-            },
-          });
-          setTimeout(() => {
-            props.navigation.goBack();
-          }, 5000);
-        }
+        body: validateSong,
       })
-      .catch(function (error) {
-        setLoading(false)
-        Alert.alert(error.message)
-        console.log(
-          "There has been a problem with your fetch operation: " + error.message
-        );
-        throw error;
-      });
-    }  else{
-      setLoading(false)
+        .then((response) => {
+          // console.log(response);
+          if (response.ok == true) {
+            fetch(
+              `https://web.gocreateafrica.app/api/v1/songs/new/${albums[0].id}/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                method: "POST",
+                body: data,
+              }
+            )
+              .then((response) => {
+                setLoading(false);
+                // const successObject = { status: response.status, data: response.data };
+                // Alert.alert(response);
+                // console.log(response.status == 200);
+                if (response.status == 200) {
+                  dispatch(songActions.getSongs(token));
+                  dispatch(userActions.getArtist(token));
+                  props.navigation.goBack();
+                  Toast.show({
+                    text: "We've uploaded your song successfully",
+                    textStyle: {
+                      fontSize: 14,
+                      paddingLeft: 10,
+                    },
+                    duration: 4000,
+                    style: {
+                      backgroundColor: "#9DC828",
+                    },
+                    onClose: () => {
+                      dispatch(authActions.clearToastMessage());
+                    },
+                  });
+                  setTimeout(() => {}, 4000);
+                }
+              })
+              .catch(function (error) {
+                setLoading(false);
+                Alert.alert(error.message);
+                // console.log("There has been a problem with your song upload");
+                throw error;
+              });
+          } else {
+            console.log(response)
+            setLoading(false);
+            Alert.alert(
+              "Duplicate Song",
+              "You have uploaded this song before, try again with another song."
+            );
+          }
+        })
+        .catch(function (error) {
+          setLoading(false);
+          // console.log(error.message);
+        });
+    } else {
+      setLoading(false);
       Toast.show({
         text: "Please check all fields and try again",
         textStyle: {
@@ -466,28 +501,25 @@ function UploadSong(props) {
   };
 
   const pickAudio = async () => {
-    let result = await DocumentPicker.getDocumentAsync({ type: "audio/*" });
-    
-    setUpload(result.uri);
-
-    // try {
-    //   const res = await DocumentPicker.pick({
-    //     type: [DocumentPicker.types.images],
-    //   });
-    //   console.log(
-    //     res.uri,
-    //     res.type, // mime type
-    //     res.name,
-    //     res.size
-    //   );
-    // } catch (err) {
-    //   if (DocumentPicker.isCancel(err)) {
-
-    //     // User cancelled the picker, exit any dialogs or menus and move on
-    //   } else {
-    //     throw err;
-    //   }
-    // }
+    // Pick a single file
+    try {
+      const res = await DocumentPicker.pick({
+        type: [DocumentPicker.types.audio],
+      });
+      // console.log(
+      //   res.uri,
+      //   res.type, // mime type
+      //   res.name,
+      //   res.size
+      // );
+      setUpload(res.uri);
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        // User cancelled the picker, exit any dialogs or menus and move on
+      } else {
+        throw err;
+      }
+    }
   };
 
   const startUpload = async () => {
@@ -506,9 +538,9 @@ function UploadSong(props) {
       );
     } else {
       await addLabel(labelAdd).then((id) => {
-        console.log(id);
+        // console.log(id);
         uploadSong(
-         typeof id === "object" ? "None" : id,
+          typeof id === "object" ? "None" : id,
           artistName,
           songTitle,
           genre,
@@ -523,10 +555,39 @@ function UploadSong(props) {
     }
   };
 
+  const onChangePresale = (event, selectedDate, testID) => {
+    const currentDate = selectedDate || date;
+    setDate1(currentDate);
+    setChosenDate1(formatDate(selectedDate));
+  };
+
+  const onChangeStartDate = (event, selectedDate, testID) => {
+    const currentDate = selectedDate || date;
+    setDate2(currentDate);
+    setChosenDate2(formatDate(selectedDate));
+  };
+
+  const onChangeEndDate = (event, selectedDate, testID) => {
+    const currentDate = selectedDate || date;
+    setDate3(currentDate);
+    setChosenDate3(formatDate(selectedDate));
+  };
+
+  function formatDate(date) {
+    var d = new Date(date),
+      month = "" + (d.getMonth() + 1),
+      day = "" + d.getDate(),
+      year = d.getFullYear();
+
+    if (month.length < 2) month = "0" + month;
+    if (day.length < 2) day = "0" + day;
+
+    return [year, month, day].join("-");
+  }
+
   return (
     <KeyboardAwareScrollView
-      style={{ backgroundColor: "#101820FF" }}
-      contentContainerStyle={styles.container}
+      style={{ backgroundColor: mode == "light" ? "#fff" : "#000" }}
       behavior="padding"
       showsVerticalScrollIndicator={false}
       showsHorizontalScrollIndicator={false}
@@ -535,168 +596,94 @@ function UploadSong(props) {
       enabled
       enableOnAndroid={true}
     >
-<View style={{display:"flex", justifyContent: "center", alignItems:"center"}}>
-
-    {image != null ? (
-      <Image
-        source={{ uri: image }}
-        style={{
-          width: 100,
-          height: 100,
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 30,
-        }}
-       
-      />
-    ) : (
       <View
         style={{
-          backgroundColor: "grey",
-          width: 100,
-          height: 100,
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 30,
-        }}
-      ></View>
-    )}
-
-    </View>
-      {/* <View
-        style={{
-          backgroundColor: "#010114",
-          width: "100%",
-          flexDirection: "column",
-          alignItems: "center",
+          display: "flex",
           justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        <Image
-          source={{ uri: image }}
+        {image != null ? (
+          <Image
+            source={{ uri: image }}
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 5,
+              marginTop: 30,
+              marginBottom: 30,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              backgroundColor: "grey",
+              width: 100,
+              height: 100,
+              borderRadius: 5,
+              marginTop: 30,
+              marginBottom: 30,
+            }}
+          ></View>
+        )}
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          marginLeft: 20,
+          marginRight: 20,
+        }}
+      >
+        <View
           style={{
-            backgroundColor: "grey",
-            width: 100,
-            height: 100,
-            borderRadius: 5,
-            marginTop: 30,
-            marginBottom: 30,
+            flex: 1,
+            borderBottomWidth: 1,
+            borderBottomColor: mode == "light" ? "black" : "white",
           }}
-        />
-
-        <View style={{ alignItems: "center" }}>
-          <Button
-            onPress={choosePhotoFromLibrary}
-            style={{
-              paddingLeft: 10,
-              paddingRight: 10,
-              width: 150,
-              backgroundColor: "#ffffff10",
-              height: 30,
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
+        >
+          <TextInput
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "black" : "white"}
+            placeholder="Artist Name"
+            value={artistName}
+            onChangeText={(text) => {
+              setArtistName(text);
             }}
-          >
-            <Text
-              style={{
-                textAlign: "center",
-                color: "white",
-                fontFamily: "Trebuchet",
-                fontSize: 13,
-              }}
-            >
-              Select a cover picture
-            </Text>
-          </Button>
-
-          <Button
-            onPress={() => {
-              
-              pickAudio();
-            }}
-            style={{
-              paddingLeft: 10,
-              paddingRight: 10,
-              backgroundColor: "#00000040",
-              height: 30,
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                textAlign: "center",
-                color: "white",
-                fontFamily: "Trebuchet",
-                fontSize: 13,
-              }}
-            >
-              Select a song to upload
-            </Text>
-          </Button>
+          />
         </View>
       </View>
-       */}
+      <View
+        style={{
+          flexDirection: "row",
+          margin: 20,
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            borderBottomWidth: 1,
+            borderBottomColor: mode == "light" ? "black" : "white",
+          }}
+        >
+          <TextInput
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "black" : "white"}
+            placeholder="Song Title"
+            value={songTitle}
+            onChangeText={(text) => {
+              setSongTitle(text);
+            }}
+          />
+        </View>
+      </View>
 
-       <View
-       style={{
-         flexDirection: "row",
-        marginLeft:20,
-        marginRight:20,
-
-       }}
-     >
-       <View
-         style={{
-           flex: 1,
-           borderBottomWidth: 1,
-           borderBottomColor: "#ffffff",
-         }}
-       >
-         <TextInput
-           style={styles.textInput}
-           placeholderTextColor="#ffffff"
-           placeholder="Artist Name"
-           value={artistName}
-           onChangeText={(text) => {
-             setArtistName(text);
-           }}
-         />
-       </View>
-     </View>
-     <View
-       style={{
-         flexDirection: "row",
-         margin: 20,
-       }}
-     >
-       <View
-         style={{
-           flex: 1,
-           borderBottomWidth: 1,
-           borderBottomColor: "white",
-         }}
-       >
-         <TextInput
-           style={styles.textInput}
-           placeholderTextColor="#ffffff"
-           placeholder="Song Title"
-           value={songTitle}
-           onChangeText={(text) => {
-             setSongTitle(text);
-           }}
-         />
-       </View>
-     </View>
-    
       <Button
         style={{
           paddingLeft: 10,
           paddingLeft: 15,
-          paddingRight: 10,      
-          backgroundColor: "#ffffff10",
+          paddingRight: 10,
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
           height: 50,
           display: "flex",
           alignItems: "center",
@@ -704,8 +691,8 @@ function UploadSong(props) {
           marginLeft: 17,
           marginRight: 17,
           marginTop: 15,
-          marginBottom:15
-         
+          marginBottom: 15,
+          width: "92%",
         }}
         onPress={() => {
           choosePhotoFromLibrary();
@@ -713,9 +700,8 @@ function UploadSong(props) {
       >
         <Text
           style={{
-            
-            color: "white",
-            fontFamily: "Trebuchet",
+            color: mode == "light" ? "black" : "white",
+
             fontSize: 13,
           }}
         >
@@ -728,8 +714,8 @@ function UploadSong(props) {
         style={{
           paddingLeft: 10,
           paddingLeft: 15,
-          paddingRight: 10,      
-          backgroundColor: "#ffffff10",
+          paddingRight: 10,
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
           height: 50,
           display: "flex",
           alignItems: "center",
@@ -737,7 +723,8 @@ function UploadSong(props) {
           marginLeft: 17,
           marginRight: 17,
           marginTop: 15,
-          marginBottom:15
+          marginBottom: 15,
+          width: "92%",
         }}
         onPress={() => {
           pickAudio();
@@ -746,8 +733,8 @@ function UploadSong(props) {
         <Text
           style={{
             textAlign: "center",
-            color: "white",
-            fontFamily: "Trebuchet",
+            color: mode == "light" ? "black" : "white",
+
             fontSize: 13,
           }}
         >
@@ -757,340 +744,170 @@ function UploadSong(props) {
         </Text>
       </Button>
 
-      {/* {showLabelPicker ? (
-        <View style={{ marginLeft: 15, marginRight: 15 }}>
-          <Picker
-            selectedValue={label}
-            onValueChange={(itemValue, itemIndex) => {
-              setLabel(itemValue);
-              if (itemValue != "None") {
-                setShowLabelAdd(false);
-              }
-            }}
-            itemStyle={{ color: "white" }}
-          >
-            <Picker.Item
-              label={"Select a record label"}
-              style={{ color: "#fff" }}
-              value={"None"}
-              key={0}
-              color="white"
-            />
-            {labels &&
-              labels.map((item) => {
-                return (
-                  <Picker.Item
-                    label={item.title}
-                    style={{ color: "#ff }}
-                    value={item.id}
-                    key={item.id}
-                  />
-                );
-              })}
-          </Picker>
-          {label != null && label != "None" ? (
-            <TouchableHighlight
-              onPress={() => {
-                setLabel("None");
-                setShowLabelAdd(true);
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Trebuchet",
-                  color: "white",
-                  marginLeft: 10,
-                }}
-              >
-                Deselect
-              </Text>
-            </TouchableHighlight>
-          ) : null}
-        </View>
-      ) : null}
-      {showLabelAdd ? (
-        <View
-          style={{
-            flexDirection: "row",
-            margin: 20,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              borderBottomWidth: 1,
-              borderBottomColor: "white",
-            }}
-          >
-            <TextInput
-              style={styles.textInput}
-              placeholderTextColor="white"
-              placeholder="Create another record label"
-              value={labelAdd}
-              onChangeText={(text) => {
-                if (text == "") {
-                  setLabelAdd(text);
-                  setShowLabelPicker(true);
-                } else {
-                  setShowLabelPicker(false);
-                  setLabelAdd(text);
-                }
-              }}
-            />
-          </View>
-        </View>
-      ) : null} */}
-      {/* 
-      {genres &&
-        genres.map((item) => {
-          console.log({ label: item.title, value: item.title });
-          set
-          return { label: item.title, value: item.title } + ", ";
-
-          // <Picker.Item
-          //   label={item.title}
-          //   style={{ color: "#fff" }}
-          //   value={item.title}
-          //   key={item.id}
-          // />
-        })} */}
       <DropDownPicker
         items={genreDrop && genreDrop}
+        zIndex={5000}
         placeholder="Select Genre"
-        selectedLabelStyle={{ color: "white" }}
-        placeholderStyle={{ color: "white" }}
+        selectedLabelStyle={{ color: mode == "light" ? "black" : "white" }}
+        placeholderStyle={{ color: mode == "light" ? "black" : "white" }}
         containerStyle={{ height: 80 }}
-        style={{ backgroundColor: "#ffffff10", margin: 15, borderWidth: 0 }}
+        style={{
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
+          margin: 15,
+          borderWidth: 0,
+        }}
         itemStyle={{
           justifyContent: "flex-start",
         }}
         dropDownStyle={{ backgroundColor: "#fafafa" }}
-        onChangeItem={(item) =>
-          // this.setState({
-          //   country: item.value,
-          // })
-          setGenre(item.value)
-        }
+        onChangeItem={(item) => setGenre(item.value)}
       />
-
-
 
       <DropDownPicker
         items={avDrop && avDrop}
+        zIndex={4000}
         placeholder="Select Availabilty Access"
-        selectedLabelStyle={{ color: "white" }}
-        placeholderStyle={{ color: "white" }}
+        selectedLabelStyle={{ color: mode == "light" ? "black" : "white" }}
+        placeholderStyle={{ color: mode == "light" ? "black" : "white" }}
         containerStyle={{ height: 80 }}
-        style={{ backgroundColor: "#ffffff10", margin: 15, borderWidth: 0 }}
+        style={{
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
+          margin: 15,
+          borderWidth: 0,
+        }}
         itemStyle={{
           justifyContent: "flex-start",
         }}
         dropDownStyle={{ backgroundColor: "#fafafa" }}
-        onChangeItem={(item) =>
-          // this.setState({
-          //   country: item.value,
-          // })
-          setAvailability(item.value)
-        }
+        onChangeItem={(item) => setAvailability(item.value)}
       />
-      {/* <View style={{ marginLeft: 10, marginRight: 10 }}>
-        <Picker
-          selectedValue={genre}
-          onValueChange={(itemValue, itemIndex) => {
-            setGenre(itemValue);
-          }}
-          itemStyle={{ color: "white" }}
-        >
-          <Picker.Item
-            label={"Select a genre"}
-            style={{ color: "#fff" }}
-            value={"None"}
-            key={0}
-            color="white"
-          />
-          {genres &&
-            genres.map((item) => {
-              return (
-                <Picker.Item
-                  label={item.title}
-                  style={{ color: "#fff" }}
-                  value={item.title}
-                  key={item.id}
-                />
-              );
-            })}
-        </Picker>
-      </View>
-      <View style={{ marginLeft: 10, marginRight: 10 }}>
-        <Picker
-          selectedValue={availability}
-          onValueChange={(itemValue, itemIndex) => {
-            setAvailability(itemValue);
-          }}
-          itemStyle={{ color: "white" }}
-        >
-          <Picker.Item
-            label={"Select availabilty"}
-            style={{ color: "#fff" }}
-            value={"None"}
-            key={0}
-            color="white"
-          />
-          {availabilites &&
-            availabilites.map((item) => {
-              return (
-                <Picker.Item
-                  label={item.title}
-                  style={{ color: "#fff" }}
-                  value={item.title}
-                  key={item.id}
-                />
-              );
-            })}
-        </Picker>
-      </View>
-       */}
 
-       {showLabelAdd ? <>
-       <View
-       style={{
-         flexDirection: "row",
-         marginLeft: 20,
-         marginRight:20,
-         marginBottom:15
-       }}
-     >
-       <View
-         style={{
-           flex: 1,
-           borderBottomWidth: 1,
-           borderBottomColor: "white",
-         }}
-       >
-         <TextInput
-           style={styles.textInput}
-           placeholderTextColor="white"
-           placeholder="Create a new record label"
-           value={labelAdd}
-           onChangeText={(text) => {
-             if (text.length > 0) {
-              
-              //setShowLabelPicker(false);
-               setLabelAdd(text);
-             }
-           }}
-         />
-       </View>
-     </View>
-     </>: <>      
-     
-     <DropDownPicker
-     items={labelDrop && labelDrop}
-     placeholder="Select a record label"
-     selectedLabelStyle={{ color: "white" }}
-     placeholderStyle={{ color: "white" }}
-     containerStyle={{ height: 80 }}
-     style={{ backgroundColor: "#ffffff10", margin: 15, borderWidth: 0 }}
-     itemStyle={{
-       justifyContent: "flex-start",
-     }}
-     dropDownStyle={{ backgroundColor: "#fafafa" }}
-     onChangeItem={(item) =>
-       // this.setState({
-       //   country: item.value,
-       // })
-       setLabel(item.value)
-     }
-   />
-   
-   </>}
-     
-     <Button
-     style={{
-       paddingLeˆIft: 10,
-       paddingLeft: 15,
-       paddingRight: 10,      
-       backgroundColor: "#ffffff10",
-       height: 50,
-       display: "flex",
-       alignItems: "center",
-       justifyContent: "flex-start",
-       marginLeft: 17,
-       marginRight: 17,
-       marginTop: 15,
-       marginBottom:15
-     }}
-     onPress={() => {
-       if(showLabelAdd){
-         setLabel("None")
-       }else{
-         setLabelAdd("")
-       }
-      setShowLabelAdd(!showLabelAdd)
+      {showLabelAdd ? (
+        <>
+          <View
+            style={{
+              flexDirection: "row",
+              marginLeft: 20,
+              marginRight: 20,
+              marginBottom: 15,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                borderBottomWidth: 1,
+                borderBottomColor: mode == "light" ? "black" : "white",
+              }}
+            >
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={mode == "light" ? "black" : "white"}
+                placeholder="Create a new record label"
+                value={labelAdd}
+                onChangeText={(text) => {
+                  if (text.length > 0) {
+                    setLabelAdd(text);
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          <DropDownPicker
+            zIndex={3000}
+            items={labelDrop && labelDrop}
+            placeholder="Select a record label"
+            selectedLabelStyle={{ color: mode == "light" ? "black" : "white" }}
+            placeholderStyle={{ color: mode == "light" ? "black" : "white" }}
+            containerStyle={{ height: 80 }}
+            style={{
+              backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
+              margin: 15,
+              borderWidth: 0,
+            }}
+            itemStyle={{
+              justifyContent: "flex-start",
+            }}
+            dropDownStyle={{ backgroundColor: "#fafafa" }}
+            onChangeItem={(item) => setLabel(item.value)}
+          />
+        </>
+      )}
 
-     }}
-   >
-     <Text
-       style={{
-         textAlign: "center",
-         color: "white",
-         fontFamily: "Trebuchet",
-         fontSize: 13,
-       }}
-     >
-     {showLabelAdd ? "CANCEL" : 
-     "Or create a new record label" }
-    
-     </Text>
-   </Button>
-      <View
+      <Button
         style={{
-          flexDirection: "row",
-          marginLeft: 20,
-          marginTop: 20,
+          paddingLeˆIft: 10,
+          paddingLeft: 15,
+          paddingRight: 10,
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
+          height: 50,
+          display: "flex",
           alignItems: "center",
+          justifyContent: "flex-start",
+          marginLeft: 17,
+          marginRight: 17,
+          marginTop: 15,
+          marginBottom: 15,
+        }}
+        onPress={() => {
+          if (showLabelAdd) {
+            setLabel("None");
+          } else {
+            setLabelAdd("");
+          }
+          setShowLabelAdd(!showLabelAdd);
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 15 }}>
-          Pre-Sales Date:
+        <Text
+          style={{
+            textAlign: "center",
+            color: mode == "light" ? "black" : "white",
+
+            fontSize: 13,
+          }}
+        >
+          {showLabelAdd ? "CANCEL" : "Or create a new record label"}
         </Text>
-        <View>
-          <DatePicker
-            defaultDate={new Date()}
-            minimumDate={new Date()}
-            maximumDate={new Date(2050, 12, 31)}
-            locale={"en"}
-            timeZoneOffsetInMinutes={undefined}
-            modalTransparent={false}
-            animationType={"fade"}
-            androidMode={"default"}
-            placeHolderText="Select Date"
-            textStyle={{ color: "white" }}
-            placeHolderTextStyle={{
-              color: "#fff",
-              fontFamily: "Trebuchet",
-              fontSize: 14,
-            }}
-            onDateChange={(newDate) => {
-              setChosenDate1(newDate);
-            }}
-            disabled={false}
-          />
-        </View>
+      </Button>
+      <View style={{ marginLeft: 20, marginTop: 20 }}>
+        <Text
+          style={{ color: mode == "light" ? "black" : "white", fontSize: 15 }}
+        >
+          Choose a Pre-Sales Date:
+        </Text>
+
+        <DateTimePicker
+          value={date1}
+          mode={"date"}
+          is24Hour={true}
+          display="compact"
+          onChange={onChangePresale}
+          themeVariant={mode}
+        />
       </View>
       <View
         style={{
-          flexDirection: "row",
           marginLeft: 20,
           marginTop: 20,
-          alignItems: "center",
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 15 }}>
+        <Text
+          style={{ color: mode == "light" ? "black" : "white", fontSize: 15 }}
+        >
           Release Start Date:
         </Text>
         <View>
-          <DatePicker
+          <DateTimePicker
+            value={date2}
+            mode={"date"}
+            is24Hour={true}
+            display="compact"
+            onChange={onChangeStartDate}
+            themeVariant={mode}
+          />
+          {/* <DatePicker
             defaultDate={new Date()}
             minimumDate={new Date()}
             maximumDate={new Date(2050, 12, 31)}
@@ -1100,33 +917,41 @@ function UploadSong(props) {
             animationType={"fade"}
             androidMode={"default"}
             placeHolderText="Select Date"
-            textStyle={{ color: "white" }}
+            textStyle={{ color: mode == "light" ? "black" : "white" }}
             placeHolderTextStyle={{
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "black" : "white",
+
               fontSize: 15,
             }}
             onDateChange={(newDate) => {
               setChosenDate2(newDate);
             }}
             disabled={false}
-          />
+          /> */}
         </View>
       </View>
 
       <View
         style={{
-          flexDirection: "row",
           marginLeft: 20,
           marginTop: 20,
-          alignItems: "center",
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 15 }}>
+        <Text
+          style={{ color: mode == "light" ? "black" : "white", fontSize: 15 }}
+        >
           Release End Date:
         </Text>
         <View>
-          <DatePicker
+          <DateTimePicker
+            value={date3}
+            mode={"date"}
+            is24Hour={true}
+            display="compact"
+            onChange={onChangeEndDate}
+            themeVariant={mode}
+          />
+          {/* <DatePicker
             defaultDate={new Date()}
             minimumDate={new Date()}
             maximumDate={new Date(2050, 12, 31)}
@@ -1136,43 +961,43 @@ function UploadSong(props) {
             animationType={"fade"}
             androidMode={"default"}
             placeHolderText="Select Date"
-            textStyle={{ color: "white" }}
+            textStyle={{ color: mode == "light" ? "black" : "white" }}
             placeHolderTextStyle={{
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "black" : "white",
+
               fontSize: 15,
             }}
             onDateChange={(newDate) => {
               setChosenDate3(newDate);
             }}
             disabled={false}
-          />
+          /> */}
         </View>
       </View>
 
-      
-
       <Button
+        disabled={loading}
         style={{
           paddingLeft: 10,
           paddingRight: 10,
           width: width - 40,
-          backgroundColor: "#ffffff10",
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff10",
           height: 50,
           alignItems: "center",
           justifyContent: "center",
           margin: 20,
+          marginBottom: 100,
         }}
         onPress={startUpload}
       >
         {loading ? (
-          <Spinner color="#fff" size="small" />
+          <Spinner color={mode == "light" ? "#000" : "#fff"} size="small" />
         ) : (
           <Text
             style={{
               textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "black" : "white",
+
               fontSize: 13,
             }}
           >
@@ -1187,14 +1012,23 @@ function UploadSong(props) {
 export default UploadSong;
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#101820FF",
+  containerlight: {
+    backgroundColor: "#fff",
   },
-  textInput: {
+  containerdark: {
+    backgroundColor: "#000",
+  },
+  textInputdark: {
     color: "white",
-    fontFamily: "Trebuchet",
+
     fontSize: 16,
-    marginBottom: 0,
+    marginBottom: 15,
+  },
+  textInputlight: {
+    color: "black",
+
+    fontSize: 16,
+    marginBottom: 15,
   },
   containerNoRoyalty: {
     flex: 1,
@@ -1246,7 +1080,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -1256,7 +1089,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

@@ -1,53 +1,18 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
-import {
-  StyleSheet,
-  StatusBar,
-  Text,
-  TextInput,
-  Platform,
-  View,
-  Image,
-  ImageBackground,
-  Dimensions,
-  TouchableOpacity,
-  Keyboard,
-  KeyboardAvoidingView,
-  Alert,
-} from "react-native";
+import { StyleSheet, Dimensions, Alert } from "react-native";
 import axios from "axios";
-import RNPaystack from "react-native-paystack";
 import { useSelector, useDispatch } from "react-redux";
 import { Spinner, Toast } from "native-base";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Button, Input, Item } from "native-base";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faTv,
-  faPodcast,
-  faStream,
-  faPlay,
-  faPlayCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  Ionicons,
-  SimpleLineIcons,
-} from "@expo/vector-icons";
-import { ScrollView } from "react-native-gesture-handler";
+import { StripeProvider } from "@stripe/stripe-react-native";
+import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { authActions } from "../src/actions/auth.actions";
 import { subscriptionActions } from "../src/actions/subscription.actions";
-import {
-  usePaystackPayment,
-  PaystackButton,
-  PaystackConsumer,
-} from "react-paystack";
 
 const width = Dimensions.get("window").width;
 const noOfPayouts = 0;
 function SubscriptionPayment({ route }, props) {
   const { itemPrice, artistid, packageid } = route.params;
-
+  const { confirmPayment } = useStripe();
   const dispatch = useDispatch();
   const [cardNumber, setcardNumber] = useState("");
   const [cardExpiry, setcardExpiry] = useState("");
@@ -66,11 +31,8 @@ function SubscriptionPayment({ route }, props) {
       ? state.subscriptionReducer.artist_subscriptions
       : null
   );
+  const mode = useSelector((state) => state.userReducer.mode);
 
-  useEffect(() => {
-    dispatch(subscriptionActions.getAvailableSubscriptions(token));
-    dispatch(subscriptionActions.getArtistSubscriptions(token));
-  }, []);
 
   const createPackage = (reference, artistid, packageid) => {
     setCreating(true);
@@ -154,328 +116,317 @@ function SubscriptionPayment({ route }, props) {
         email,
         itemPrice * 100
       );
-
-      function chargeCard() {
-        RNPaystack.chargeCard({
-          cardNumber: `${cardNumber}`,
-          expiryMonth: `${expiryMonth}`,
-          expiryYear: `${expiryYear}`,
-          cvc: `${cvv}`,
-          email: `${email}`,
-          amountInKobo: itemPrice * 100,
-        })
-          .then((response) => {
-            console.log("successful");
-            console.log(response); // card charged successfully, get reference here
-            createPackage(response, artistid, packageid);
-          })
-          .catch((error) => {
-            console.log("error ti wa o ");
-            console.log(error); // error is a javascript Error object
-            console.log(error.message);
-            console.log(error.code);
-            Toast.show({
-              text: error.message,
-              textStyle: {
-                fontSize: 14,
-                paddingLeft: 10,
-              },
-              duration: 4000,
-              style: {
-                backgroundColor: "red",
-              },
-              onClose: () => {},
-            });
-          });
-
-        console.log("clicked");
-      }
-      chargeCard();
     }
   };
 
   return (
-    <KeyboardAwareScrollView
-      style={{ backgroundColor: "#101820FF" }}
-      contentContainerStyle={styles.container}
-      behavior="padding"
-      showsVerticalScrollIndicator={false}
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="always"
-      extraScrollHeight={50}
-      enabled
-      enableOnAndroid={true}
-    >
-      <View
-        style={{
-          backgroundColor: "#010114",
-          width: width - 40,
-          height: 180,
-          marginTop: 20,
-          borderRadius: 5,
+   
+      <CardField
+        postalCodeEnabled={true}
+        placeholder={{
+          number: "4242 4242 4242 4242",
         }}
-      >
-        <Text
-          style={{
-            fontFamily: "Trebuchet",
-            color: "white",
-            fontSize: 12,
-            marginLeft: 30,
-            marginTop: 30,
-          }}
-        >
-          Card Number
-        </Text>
-        <Text
-          style={{
-            fontFamily: "Trebuchet",
-            color: "white",
-            fontSize: 18,
-            marginLeft: 30,
-            marginTop: 10,
-          }}
-        >
-          {cardNumber}
-        </Text>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                fontFamily: "Trebuchet",
-                color: "white",
-                fontSize: 12,
-                marginLeft: 30,
-                marginTop: 30,
-              }}
-            >
-              Expiry Date
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Trebuchet",
-                color: "white",
-                fontSize: 18,
-                marginLeft: 30,
-                marginTop: 10,
-              }}
-            >
-              {cardExpiry &&
-                cardExpiry.substr(0, 2) + "/" + (cardExpiry.substr(2) || "")}
-            </Text>
-          </View>
-
-          <View>
-            <Text
-              style={{
-                fontFamily: "Trebuchet",
-                color: "white",
-                fontSize: 12,
-                marginRight: 30,
-                marginTop: 30,
-              }}
-            >
-              CVV
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Trebuchet",
-                color: "white",
-                textAlign: "left",
-                fontSize: 18,
-                marginTop: 10,
-              }}
-            >
-              {cvv && cvv}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          margin: 20,
+        cardStyle={{
+          backgroundColor: "#FFFFFF",
+          textColor: "#000000",
         }}
-      >
-        <View
-          style={{
-            backgroundColor: "#00000080",
-            height: 50,
-            borderRadius: 5,
-            width: "100%",
-            justifyContent: "center",
-          }}
-        >
-          <TextInput
-            style={styles.textInput}
-            keyboardType="number-pad"
-            placeholderTextColor="white"
-            placeholder="Card Number"
-            maxLength={16}
-            value={cardNumber}
-            onChangeText={(text) => {
-              setcardNumber(text);
-            }}
-          />
-        </View>
-      </View>
-      <View
         style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginLeft: 20,
-          marginRight: 20,
+          width: "100%",
+          height: 50,
+          marginVertical: 30,
         }}
-      >
-        <View
-          style={{
-            backgroundColor: "#00000080",
-            height: 50,
-            borderRadius: 5,
-            width: "100%",
-            justifyContent: "center",
-          }}
-        >
-          <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
-            placeholder="Expiry Date"
-            keyboardType="number-pad"
-            maxLength={4}
-            value={cardExpiry}
-            onChangeText={(text) => {
-              setcardExpiry(text);
-            }}
-          />
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          margin: 20,
+        onCardChange={(cardDetails) => {
+          console.log("cardDetails", cardDetails);
         }}
-      >
-        <View
-          style={{
-            backgroundColor: "#00000080",
-            height: 50,
-            borderRadius: 5,
-            width: "100%",
-            justifyContent: "center",
-          }}
-        >
-          <TextInput
-            style={styles.textInput}
-            keyboardType="number-pad"
-            placeholderTextColor="white"
-            placeholder="CVV"
-            value={cvv}
-            onChangeText={(text) => {
-              setCvv(text);
-            }}
-            maxLength={3}
-          />
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginLeft: 20,
-          marginRight: 20,
+        onFocus={(focusedField) => {
+          console.log("focusField", focusedField);
         }}
-      >
-        <View
-          style={{
-            backgroundColor: "#00000080",
-            height: 50,
-            borderRadius: 5,
-            width: "100%",
-            justifyContent: "center",
-          }}
-        >
-          <TextInput
-            style={styles.textInput}
-            keyboardType="email-address"
-            placeholderTextColor="white"
-            placeholder="Email"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-            }}
-          />
-        </View>
-      </View>
-
-      <Text
-        style={{
-          fontStyle: "italic",
-          fontSize: 12,
-          color: "white",
-          marginTop: 20,
-          textAlign: "center",
-        }}
-      >
-        Your information is not stored or shared with anyone. {"\n"}
-        All payments made are secured by PayStack.
-      </Text>
-
-      <View
-        style={{
-          flex: 1,
-          flexDirection: "row",
-          marginLeft: 20,
-          marginRight: 20,
-        }}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => {
-            makePayment();
-          }}
-          style={{
-            flexDirection: "row",
-            marginTop: 20,
-            marginBottom: 30,
-            height: 50,
-            backgroundColor: "#32CD3275",
-            width: "100%",
-            borderRadius: 3,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <FontAwesome5 name="money-check" size={13} color="white" />
-          <Text
-            style={{
-              marginLeft: 10,
-              fontFamily: "Trebuchet",
-              fontSize: 17,
-              color: "white",
-            }}
-          >
-            Pay ‎₦{itemPrice}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAwareScrollView>
+      />
   );
+  // return (
+  //   <KeyboardAwareScrollView
+  //     style={{ backgroundColor: mode == "light" ? "#d5d5d5" : "#000" }}
+  //     contentContainerStyle={styles[`container${mode}`]}
+  //     behavior="padding"
+  //     showsVerticalScrollIndicator={false}
+  //     showsHorizontalScrollIndicator={false}
+  //     keyboardShouldPersistTaps="always"
+  //     extraScrollHeight={50}
+  //     enabled
+  //     enableOnAndroid={true}
+  //   >
+  //     <StatusBar
+  //       barStyle={mode == "light" ? "dark-content" : "light-content"}
+  //     />
+  //     <View
+  //       style={{
+  //         backgroundColor: mode == "light" ? "#fff" : "#111111",
+  //         width: width - 40,
+  //         height: 180,
+  //         marginTop: 20,
+  //         borderRadius: 5,
+  //       }}
+  //     >
+  //       <Text
+  //         style={{
+  //           color: mode == "light" ? "black" : "white",
+  //           fontSize: 12,
+  //           marginLeft: 30,
+  //           marginTop: 30,
+  //         }}
+  //       >
+  //         Card Number
+  //       </Text>
+  //       <Text
+  //         style={{
+  //           color: mode == "light" ? "black" : "white",
+  //           fontSize: 18,
+  //           marginLeft: 30,
+  //           marginTop: 10,
+  //         }}
+  //       >
+  //         {cardNumber}
+  //       </Text>
+  //       <View
+  //         style={{
+  //           flex: 1,
+  //           flexDirection: "row",
+  //           justifyContent: "space-between",
+  //         }}
+  //       >
+  //         <View>
+  //           <Text
+  //             style={{
+  //               color: mode == "light" ? "black" : "white",
+  //               fontSize: 12,
+  //               marginLeft: 30,
+  //               marginTop: 30,
+  //             }}
+  //           >
+  //             Expiry Date
+  //           </Text>
+  //           <Text
+  //             style={{
+  //               color: mode == "light" ? "black" : "white",
+  //               fontSize: 18,
+  //               marginLeft: 30,
+  //               marginTop: 10,
+  //             }}
+  //           >
+  //             {cardExpiry &&
+  //               cardExpiry.substr(0, 2) + "/" + (cardExpiry.substr(2) || "")}
+  //           </Text>
+  //         </View>
+
+  //         <View>
+  //           <Text
+  //             style={{
+  //               color: mode == "light" ? "black" : "white",
+  //               fontSize: 12,
+  //               marginRight: 30,
+  //               marginTop: 30,
+  //             }}
+  //           >
+  //             CVV
+  //           </Text>
+  //           <Text
+  //             style={{
+  //               color: mode == "light" ? "black" : "white",
+  //               textAlign: "left",
+  //               fontSize: 18,
+  //               marginTop: 10,
+  //             }}
+  //           >
+  //             {cvv && cvv}
+  //           </Text>
+  //         </View>
+  //       </View>
+  //     </View>
+
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         margin: 20,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           backgroundColor: "#00000030",
+  //           height: 50,
+  //           borderRadius: 5,
+  //           width: "100%",
+  //           justifyContent: "center",
+  //         }}
+  //       >
+  //         <TextInput
+  //           style={styles[`textInput${mode}`]}
+  //           keyboardType="number-pad"
+  //           placeholderTextColor="white"
+  //           placeholder="Card Number"
+  //           maxLength={16}
+  //           value={cardNumber}
+  //           onChangeText={(text) => {
+  //             setcardNumber(text);
+  //           }}
+  //         />
+  //       </View>
+  //     </View>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginLeft: 20,
+  //         marginRight: 20,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           backgroundColor: "#00000030",
+  //           height: 50,
+  //           borderRadius: 5,
+  //           width: "100%",
+  //           justifyContent: "center",
+  //         }}
+  //       >
+  //         <TextInput
+  //           style={styles[`textInput${mode}`]}
+  //           placeholderTextColor="white"
+  //           placeholder="Expiry Date"
+  //           keyboardType="number-pad"
+  //           maxLength={4}
+  //           value={cardExpiry}
+  //           onChangeText={(text) => {
+  //             setcardExpiry(text);
+  //           }}
+  //         />
+  //       </View>
+  //     </View>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         margin: 20,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           backgroundColor: "#00000030",
+  //           height: 50,
+  //           borderRadius: 5,
+  //           width: "100%",
+  //           justifyContent: "center",
+  //         }}
+  //       >
+  //         <TextInput
+  //           style={styles[`textInput${mode}`]}
+  //           keyboardType="number-pad"
+  //           placeholderTextColor="white"
+  //           placeholder="CVV"
+  //           value={cvv}
+  //           onChangeText={(text) => {
+  //             setCvv(text);
+  //           }}
+  //           maxLength={3}
+  //         />
+  //       </View>
+  //     </View>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginLeft: 20,
+  //         marginRight: 20,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           backgroundColor: "#00000030",
+  //           height: 50,
+  //           borderRadius: 5,
+  //           width: "100%",
+  //           justifyContent: "center",
+  //         }}
+  //       >
+  //         <TextInput
+  //           style={styles[`textInput${mode}`]}
+  //           keyboardType="email-address"
+  //           placeholderTextColor="white"
+  //           placeholder="Email"
+  //           value={email}
+  //           onChangeText={(text) => {
+  //             setEmail(text);
+  //           }}
+  //         />
+  //       </View>
+  //     </View>
+
+  //     <Text
+  //       style={{
+  //         fontStyle: "italic",
+  //         fontSize: 12,
+  //         color: mode == "light" ? "black" : "white",
+  //         marginTop: 20,
+  //         textAlign: "center",
+  //       }}
+  //     >
+  //       Your information is not stored or shared with anyone. {"\n"}
+  //       All payments made are secured by PayStack.
+  //     </Text>
+
+  //     <View
+  //       style={{
+  //         flex: 1,
+  //         flexDirection: "row",
+  //         marginLeft: 20,
+  //         marginRight: 20,
+  //       }}
+  //     >
+  //       <TouchableOpacity
+  //         activeOpacity={0.8}
+  //         onPress={() => {
+  //           makePayment();
+  //         }}
+  //         style={{
+  //           flexDirection: "row",
+  //           marginTop: 20,
+  //           marginBottom: 30,
+  //           height: 50,
+  //           backgroundColor: "#32CD3275",
+  //           width: "100%",
+  //           borderRadius: 3,
+  //           justifyContent: "center",
+  //           alignItems: "center",
+  //         }}
+  //       >
+  //         <FontAwesome5 name="money-check" size={13} color="white" />
+  //         <Text
+  //           style={{
+  //             marginLeft: 10,
+
+  //             fontSize: 17,
+  //             color: "white",
+  //           }}
+  //         >
+  //           Pay ‎${itemPrice}
+  //         </Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   </KeyboardAwareScrollView>
+  // );
 }
 
 export default SubscriptionPayment;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flexDirection: "column",
-    backgroundColor: "#101820FF",
+    backgroundColor: "#d5d5d5",
+    alignItems: "center",
+  },
+  containerdark: {
+    flexDirection: "column",
+    backgroundColor: "#000",
     alignItems: "center",
   },
   containerNoPayouts: {
@@ -484,14 +435,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  kContainer: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#000",
+  textInputlight: {
+    color: "#000",
+    fontSize: 14,
+    paddingLeft: 25,
   },
 
-  textInput: {
-    color: "#575757",
+  textInputdark: {
+    color: "#fff",
     fontSize: 14,
     paddingLeft: 25,
   },
@@ -529,7 +480,7 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: "center",
-    fontFamily: "Trebuchet",
+
     fontSize: 18,
     marginTop: 30,
   },
@@ -561,7 +512,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -571,7 +521,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

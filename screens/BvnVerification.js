@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Spinner  } from "native-base";
+import { Spinner } from "native-base";
 import axios from "axios";
 
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -42,6 +42,7 @@ const BvnVerification = (props) => {
   const dispatch = useDispatch();
   const buttonLoader = useSelector((state) => state.authReducer.buttonLoader);
   const message = useSelector((state) => state.authReducer.toastMessage);
+  const mode = useSelector((state) => state.userReducer.mode);
 
   const token = useSelector((state) => state.authReducer.token);
 
@@ -51,7 +52,7 @@ const BvnVerification = (props) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
-  const [bankName, setBankName] = useState("")
+  const [bankName, setBankName] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [middleNameError, setMiddleNameError] = useState("");
@@ -61,7 +62,7 @@ const BvnVerification = (props) => {
   const [bankCodeError, setBankCodeError] = useState("");
   const [screenError, setScreenError] = useState(null);
 
-  useEffect(() => { 
+  useEffect(() => {
     // if (password != "" && confirmPassword != "") {
     //   setPasswordError(
     //     validateInput({
@@ -80,12 +81,12 @@ const BvnVerification = (props) => {
   }, []);
 
   const navigateDashboard = () => {
-    props.navigation.navigate("Dashboard");
+    props.navigation.goBack();
   };
 
-  const verifyBvn = (bvn, bank_code, account_number) => {
-   console.log( bvn, bank_code, account_number )
-    if (bvn.length == 0 || bankCode.length == 0  || accountNumber.length == 0 ) {
+  const verifyBvn = (bank_code, account_number) => {
+    console.log(account_number.length);
+    if (bankCode.length == 0 || accountNumber.length == 0) {
       setCreating(false);
       Toast.show({
         text: "Please recheck all fields",
@@ -101,10 +102,10 @@ const BvnVerification = (props) => {
           dispatch(authActions.clearToastMessage());
         },
       });
-    } else if(bvn.length < 11){
+    } else if (account_number.length < 10) {
       setCreating(false);
       Toast.show({
-        text: "Your BVN should be 11 characters",
+        text: "Your account number should be 10 digits",
         textStyle: {
           fontSize: 14,
           paddingLeft: 10,
@@ -117,33 +118,14 @@ const BvnVerification = (props) => {
           dispatch(authActions.clearToastMessage());
         },
       });
-    }
-    else if(account_number < 10){
-      setCreating(false);
-      Toast.show({
-        text: "Your account number should be 10 characters",
-        textStyle: {
-          fontSize: 14,
-          paddingLeft: 10,
-        },
-        duration: 10000,
-        style: {
-          backgroundColor: "red",
-        },
-        onClose: () => {
-          dispatch(authActions.clearToastMessage());
-        },
-      });
-    }else {
-
+    } else {
       return axios
         .post(
           "https://web.gocreateafrica.app/api/v1/accounts/verify/bvn/",
           {
-            bvn,
             bank_code,
             account_number,
-            bank_name: bankName
+            bank_name: bankName,
           },
           {
             headers: {
@@ -152,22 +134,37 @@ const BvnVerification = (props) => {
           }
         )
         .then((response) => {
-          console.log(response)
           // const successObject = { status: response.status, data: response.data };
           if (response.status == 200) {
-            Alert.alert(
-              "Confirmation Successful",
-              "Your BVN has been confirmed successfully",
-              [
-                {
-                  text: "Go to my dashboard",
-                  onPress: () => {
-                    navigateDashboard();
-                  },
-                },
-              ],
-              { cancelable: false }
-            );
+            // Alert.alert(
+            //   "Confirmation Successful",
+            //   "Your account has been updated successfully",
+            //   [
+            //     {
+            //       text: "Go to my dashboard",
+            //       onPress: () => {
+            //         navigateDashboard();
+            //       },
+            //     },
+            //   ],
+            //   { cancelable: false }
+            // );
+            Toast.show({
+              text: "We've updated your bank details successfully",
+              textStyle: {
+                fontSize: 14,
+                paddingLeft: 10,
+              },
+              duration: 3000,
+              style: {
+                backgroundColor: "#9DC828",
+              },
+              onClose: () => {
+                dispatch(authActions.clearToastMessage());
+                props.navigation.goBack();
+              },
+            });
+
             setCreating(false);
           }
           if (response.status == 400) {
@@ -176,7 +173,6 @@ const BvnVerification = (props) => {
           }
         })
         .catch(function (error) {
-          console.log(error.response.data )
           if (error.response.status == 400) {
             setScreenError(error.response.data.message);
             setCreating(false);
@@ -202,44 +198,28 @@ const BvnVerification = (props) => {
     }
   };
   return (
-    <ImageBackground style={styles.container}>
-      <KeyboardAwareScrollView
-        style={styles.kContainer}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-        behavior="padding"
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        enabled
-        enableOnAndroid={true}
-      >
-        <StatusBar barStyle="light-content" />
+    <ImageBackground style={styles[`container${mode}`]}>
+      <StatusBar
+        barStyle={mode == "light" ? "dark-content" : "light-content"}
+      />
 
-        {/* <View >
+      {/* <View >
           <Text style={[styles.loginInfo, {marginTop:30}]}>Enter your account details</Text>
         </View> */}
-        <View
-          style={{
-            backgroundColor: "#010114",
-            borderRadius: 5,
-            margin: 20,
-            padding: 20,
-            paddingBottom: 20,
-          }}
-        >
-          <View>
-            {screenError ? (
-              <Text
-                style={[
-                  styles.errorMessage,
-                  { color: "white", textAlign: "center", marginBottom: 30 },
-                ]}
-              >
-                {screenError}
-              </Text>
-            ) : null}
-          </View>
-          {/* <Item regular style={[styles.itemStyle]}>
+
+      <View>
+        {screenError ? (
+          <Text
+            style={[
+              styles.errorMessage,
+              { color: "white", textAlign: "center", marginBottom: 30 },
+            ]}
+          >
+            {screenError}
+          </Text>
+        ) : null}
+      </View>
+      {/* <Item regular style={[styles.itemStyle]}>
           <Input
             style={styles.textInput}
             placeholder="First Name"
@@ -285,145 +265,97 @@ const BvnVerification = (props) => {
           />
         </Item> */}
 
-          <Item regular style={[styles.itemStyle, { marginTop: 20 }]}>
-            <Input
-              style={styles.textInput}
-              placeholder="Bank Verification Number (BVN)"
-              placeholderTextColor="#fff"
-              spellCheck={false}
-              keyboardType="numeric"
-              autoCapitalize="words"
-              maxLength={11}
-              value={bvn}
-              onChangeText={(text) => {
-                setBvn(text);
-                setBvnError(validateInput({ type: "name", value: text }));
-                dispatch(authActions.clearErrors());
-              }}
-            />
-          </Item>
-          <View>
-            {bvnError ? (
-              <Text style={styles.errorMessage}>{bvnError}</Text>
-            ) : null}
-          </View>
-          <DropDownPicker
-            items={Banks}
-            defaultValue={bankCode}
-            containerStyle={{
-              height: 52,
-              marginTop: 20,
-              marginRight: 20,
-              marginLeft: 20,
-            }}
-            style={{ backgroundColor: "#ffffff30", borderColor: "#00000000" }}
-            itemStyle={{
-              justifyContent: "flex-start",
-            }}
-            dropDownStyle={{
-              backgroundColor: "#cdcdcd",
-              borderColor: "#00000000",
-            }}
-            placeholder="Select your bank"
-            placeholderStyle={{
-              fontFamily: "Trebuchet",
-              color: "#fff",
-            }}
-            labelStyle={{
-              fontFamily: "Trebuchet",
-              textAlign: "left",
-              color: "#fff",
-            }}
-            searchable={true}
-            searchablePlaceholder="Search for your bank"
-            searchablePlaceholderTextColor="white"
-            searchableError={() => <Text>Bank not found</Text>}
-            onChangeItem={(item) => {
-              setBankCode(item.value);
-              setBankName(item.label)
-              setBankCodeError(
-                validateInput({ type: "name", value: item.value })
-              );
-            }}
-          />
-          <View>
-            {bankCodeError ? (
-              <Text style={styles.errorMessage}>{bankCodeError}</Text>
-            ) : null}
-          </View>
-          <Item regular style={[styles.itemStyle, { marginTop: 20 }]}>
-            <Input
-              style={styles.textInput}
-              placeholder="Account Number"
-              placeholderTextColor="#fff"
-              spellCheck={false}
-              autoCapitalize="words"
-              value={accountNumber}
-              keyboardType="numeric"
-              maxLength= {10}
-              onChangeText={(text) => {
-                setAccountNumber(text);
-                setAccountNumberError(
-                  validateInput({ type: "name", value: text })
-                );
-                dispatch(authActions.clearErrors());
-              }}
-            />
-          </Item>
-          <View>
-            {accountNumberError ? (
-              <Text style={styles.errorMessage}>{accountNumberError}</Text>
-            ) : null}
-          </View>
+      <View>
+        {bvnError ? <Text style={styles.errorMessage}>{bvnError}</Text> : null}
+      </View>
+      <DropDownPicker
+        items={Banks}
+        defaultValue={bankCode}
+        containerStyle={{
+          height: 52,
+          marginTop: 20,
+        }}
+        style={{
+          backgroundColor: mode == "light" ? "#00000030" : "#ffffff30",
+          borderColor: "#00000000",
+        }}
+        itemStyle={{
+          justifyContent: "flex-start",
+        }}
+        dropDownStyle={{
+          backgroundColor: mode == "light" ? "#cdcdcd" : "#000",
+          borderColor: "#00000000",
+        }}
+        placeholder="Select your bank"
+        placeholderStyle={{
+          color: mode == "light" ? "black" : "#fff",
+        }}
+        labelStyle={{
+          textAlign: "left",
+          color: mode == "light" ? "black" : "#fff",
+        }}
+        searchable={true}
+        searchableStyle={{ color: mode == "light" ? "black" : "#fff" }}
+        searchablePlaceholder="Search for your bank"
+        searchablePlaceholderTextColor={mode == "light" ? "#00000080" : "white"}
+        searchableError={() => <Text style={{color: mode == "light" ? "black" : "#fff"}}>Bank not found</Text>}
+        onChangeItem={(item) => {
+          setBankCode(item.value);
+          setBankName(item.label);
+          setBankCodeError(validateInput({ type: "name", value: item.value }));
+        }}
+      />
+      <View>
+        {bankCodeError ? (
+          <Text style={styles.errorMessage}>{bankCodeError}</Text>
+        ) : null}
+      </View>
+      <Item regular style={[styles[`itemStyle${mode}`], { marginTop: 20 }]}>
+        <Input
+          style={styles[`textInput${mode}`]}
+          placeholder="Account Number"
+          placeholderTextColor={mode == "light" ? "#000" : "#fff"}
+          spellCheck={false}
+          autoCapitalize="words"
+          value={accountNumber}
+          keyboardType="numeric"
+          maxLength={10}
+          onChangeText={(text) => {
+            setAccountNumber(text);
+            setAccountNumberError(validateInput({ type: "name", value: text }));
+            dispatch(authActions.clearErrors());
+          }}
+        />
+      </Item>
+      <View>
+        {accountNumberError ? (
+          <Text style={styles[`errorMessage${mode}`]}>
+            {accountNumberError}
+          </Text>
+        ) : null}
+      </View>
 
-          <View style={{ marginTop: 20 }}>
-            <Button
-              onPress={() => {
-                setCreating(true);
-                verifyBvn(bvn, bankCode, accountNumber);
-              }}
-              activeOpacity={0.95}
-              style={styles.loginButton}
-              block
-            >
-              {creating ? (
-                <>
-                  <Spinner color="#fff" size="small" />
-                </>
-              ) : (
-                <>
-                  <Text style={styles.buttonText}>Verify</Text>
-                </>
-              )}
-            </Button>
-            <View style={{ alignItems: "center", justifyContent: "center" }}>
-              {Platform.OS === "ios" ? (
-                <Image
-                  source={require("../assets/paystack.png")}
-                  style={{
-                    marginTop: 30,
-
-                    width: "30%",
-                    height: 40,
-                    resizeMode: "contain",
-                  }}
-                />
-              ) : (
-                <Image
-                  source={{ uri: "asset:/images/paystack.png" }}
-                  style={{
-                    marginTop: 20,
-                    width: "30%",
-                    height: 40,
-                    resizeMode: "contain",
-                  }}
-                />
-              )}
-             
-            </View>
-          </View>
-        </View>
-      </KeyboardAwareScrollView>
+      <View style={{ marginTop: 20 }}>
+        <Button
+          onPress={() => {
+            setCreating(true);
+            verifyBvn(bankCode, accountNumber);
+          }}
+          activeOpacity={0.95}
+          style={styles[`button${mode}`]}
+          block
+        >
+          {creating ? (
+            <>
+              <Spinner color="#fff" size="small" />
+            </>
+          ) : (
+            <>
+              <Text style={styles.buttonText}>Update Details</Text>
+            </>
+          )}
+        </Button>
+      </View>
     </ImageBackground>
   );
 };
@@ -431,25 +363,41 @@ const BvnVerification = (props) => {
 export default BvnVerification;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor: "#101820FF",
+    backgroundColor: "#fff",
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000000",
+    paddingLeft: 10,
+    paddingRight: 10,
   },
   kContainer: {
     flex: 1,
   },
 
-  textInput: {
-    fontFamily: "Trebuchet",
+  textInputdark: {
     color: "#ffffff",
     fontSize: 14,
     paddingLeft: 10,
   },
-  itemStyle: {
+  textInputlight: {
+    color: "#000",
+    fontSize: 14,
+    paddingLeft: 10,
+  },
+  itemStyledark: {
     borderColor: "#cdcdcd00",
     backgroundColor: "#ffffff30",
-    marginLeft: 20,
-    marginRight: 20,
+
+    borderRadius: 5,
+  },
+  itemStylelight: {
+    borderColor: "#cdcdcd00",
+    backgroundColor: "#00000030",
 
     borderRadius: 5,
   },
@@ -459,7 +407,7 @@ const styles = StyleSheet.create({
   },
 
   registerButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#111111",
 
     height: 60,
     width: width - 40,
@@ -468,29 +416,38 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingRight: 30,
   },
-  loginButton: {
-    backgroundColor: "#1A5C79",
+  buttonlight: {
+    backgroundColor: "#11111190",
     height: 55,
 
     paddingLeft: 30,
     paddingRight: 30,
-    marginLeft: 20,
-    marginRight: 20,
+  },
+  buttondark: {
+    backgroundColor: "#111",
+    height: 55,
+
+    paddingLeft: 30,
+    paddingRight: 30,
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
-  errorMessage: {
-    fontFamily: "Trebuchet",
+  errorMessagedark: {
     color: "#fff",
+    paddingLeft: 20,
+    paddingRight: 20,
+    marginTop: 10,
+  },
+  errorMessagelight: {
+    color: "#000",
     paddingLeft: 20,
     paddingRight: 20,
     marginTop: 10,
   },
   loginInfo: {
     color: "#000",
-    fontFamily: "Trebuchet",
+
     fontSize: 15,
     marginTop: 10,
     marginBottom: 20,

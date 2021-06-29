@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { AsyncStorage } from "react-native";
 
@@ -13,12 +12,13 @@ export const authService = {
   signup,
 };
 
-function signup(email, first_name, last_name, phone) {
+function signup(email, first_name, last_name, phone, country) {
   const signupDetails = {
     email,
     first_name,
     last_name,
     phone,
+    country,
   };
   return axios
 
@@ -55,8 +55,8 @@ function createPassword(uid, token, password) {
     token,
     password,
   };
-  console.log(userDetails)
- 
+  console.log(userDetails);
+
   return axios
     .post(
       "https://web.gocreateafrica.app/api/v1/accounts/verify/",
@@ -64,8 +64,7 @@ function createPassword(uid, token, password) {
       { headers: { "Access-Control-Allow-Origin": "*" } }
     )
     .then((response) => {
-   
-      const successObject = { status: response.status, data: response.data};
+      const successObject = { status: response.status, data: response.data };
       //  const token = res.data.token;
       //  const id = 1;
       //  const auth = {id, token}
@@ -78,7 +77,10 @@ function createPassword(uid, token, password) {
       if (error.response) {
         // Request made and server responded
         const values = Object.values(error.response.data);
-        const errorObject = { status: error.response.status, error: error.response.data.message };
+        const errorObject = {
+          status: error.response.status,
+          error: error.response.data.message,
+        };
         // for (const value of values) {
         //   console.log(value[0])
         // }
@@ -90,15 +92,14 @@ function createPassword(uid, token, password) {
     });
 }
 
-
 function resetPassword(uid, token, password) {
   const userDetails = {
     uid,
     token,
     password,
   };
-  console.log(userDetails)
- 
+  console.log(userDetails);
+
   return axios
     .post(
       "https://web.gocreateafrica.app/api/v1/accounts/verify/",
@@ -106,8 +107,7 @@ function resetPassword(uid, token, password) {
       { headers: { "Access-Control-Allow-Origin": "*" } }
     )
     .then((response) => {
-   
-      const successObject = { status: response.status, data: response.data};
+      const successObject = { status: response.status, data: response.data };
       //  const token = res.data.token;
       //  const id = 1;
       //  const auth = {id, token}
@@ -120,7 +120,10 @@ function resetPassword(uid, token, password) {
       if (error.response) {
         // Request made and server responded
         const values = Object.values(error.response.data);
-        const errorObject = { status: error.response.status, error: error.response.data.message };
+        const errorObject = {
+          status: error.response.status,
+          error: error.response.data.message,
+        };
         // for (const value of values) {
         //   console.log(value[0])
         // }
@@ -131,7 +134,6 @@ function resetPassword(uid, token, password) {
       Promise.reject(error);
     });
 }
-
 
 function getUser(uid) {
   return axios
@@ -171,23 +173,18 @@ function login(username, password) {
   };
 
   return axios
-    .post(
-      "https://web.gocreateafrica.app/api/v1/accounts/login/",
-      loginDetails
-    )
+    .post("https://web.gocreateafrica.app/api/v1/accounts/login/", loginDetails)
     .then((response) => {
-     
       const successObject = { status: response.status, data: response.data };
       //  const token = res.data.token;
       //  const id = 1;
       //  const auth = {id, token}
       //  return auth;
-       return successObject;
+      return successObject;
     })
     .catch(function (error) {
-      console.log(error)
+      console.log(error);
       if (error.response) {
-    
         // Request made and server responded
         const values = Object.values(error.response.data);
         const errorObject = { status: error.response.status, error: values[0] };
@@ -201,10 +198,11 @@ function login(username, password) {
 }
 
 function sendResetLink(email) {
-  const emailDetails = {email}
+  const emailDetails = { email };
   return axios
     .post(
-      `https://web.gocreateafrica.app/api/v1/accounts/reset/password/`, emailDetails
+      `https://web.gocreateafrica.app/api/v1/accounts/reset/password/`,
+      emailDetails
     )
     .then((response) => {
       const successObject = { status: response.status };
@@ -227,7 +225,6 @@ function sendResetLink(email) {
       }
     });
 }
-
 
 function getItem(itemName) {
   return AsyncStorage.getItem(itemName)

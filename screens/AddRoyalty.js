@@ -30,15 +30,6 @@ import {
   faPlay,
   faPlayCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  Ionicons,
-  MaterialIcons,
-} from "@expo/vector-icons";
 import { ScrollView } from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
@@ -46,15 +37,14 @@ import { songActions } from "../src/actions/song.actions";
 const width = Dimensions.get("window").width;
 const songSelected = null;
 
-function AddRoyalty() {
+function AddRoyalty(props) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.authReducer.token);
-  const songs = useSelector((state) =>
-    state.songReducer.songs ? state.songReducer.songs : null
-  );
+  const songs = useSelector((state) => state.songReducer.songs);
   const royalties = useSelector((state) =>
     state.songReducer.songs ? state.songReducer.songs.royalties : null
   );
+  const mode = useSelector((state) => state.userReducer.mode);
   const message = useSelector((state) => state.songReducer.message);
   const buttonLoader = useSelector((state) => state.songReducer.loading);
 
@@ -63,8 +53,8 @@ function AddRoyalty() {
   const [phone, setphone] = useState(null);
   const [song, setsong] = useState("None");
   const [share, setshare] = useState(null);
-  const [description, setdescription] = useState(null)
-  const [songList, setsongList] = useState([]);
+  const [description, setdescription] = useState(null);
+  const [songList, setsongList] = useState([{ label: "", value: "" }]);
 
   const onChangeText = ({
     dialCode,
@@ -104,19 +94,20 @@ function AddRoyalty() {
       // moment(newDob).format('L');
       //console.log(token, share, email, phone, fullname, song, description);
       dispatch(
-        songActions.addRoyalty(token, share, email, phone, fullname, song, description)
+        songActions.addRoyalty(
+          token,
+          share,
+          email,
+          phone,
+          fullname,
+          song,
+          description
+        )
       );
+
+      props.navigation.navigate("Royalties");
     }
   };
-
-  useEffect(() => {
-    dispatch(songActions.getSongs(token));
-    if (songs.data.results.length != 0) {
-      songs.data.results.forEach((song) => {
-        songList.push({ id: song.id, value: song.title });
-      });
-    }
-  }, []);
 
   useEffect(() => {
     if (message != null || message != undefined) {
@@ -139,8 +130,8 @@ function AddRoyalty() {
 
   return (
     <KeyboardAwareScrollView
-      style={{ backgroundColor: "#101820FF" }}
-      contentContainerStyle={styles.container}
+      style={{ backgroundColor: mode == "light" ? "#fff" : "#000" }}
+      contentContainerStyle={styles[`container${mode}`]}
       behavior="padding"
       showsVerticalScrollIndicator={false}
       showsHorizontalScrollIndicator={false}
@@ -149,61 +140,35 @@ function AddRoyalty() {
       enabled
       enableOnAndroid={true}
     >
-      <View
-        style={{
-          backgroundColor: "#010114",
-          width: "90%",
-          marginLeft: 20,
-          marginRight: 20,
-          justifyContent: "center",
-          alignItems: "center",
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 20,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <FontAwesome5 name={"signature"} size={20} color="white" />
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 15,
-              padding: 20,
-            }}
-          >
-            Royalty's Details
-          </Text>
-        </View>
-      </View>
-
+      <StatusBar
+        barStyle={mode == "light" ? "dark-content" : "light-content"}
+      />
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
           margin: 20,
+          marginTop: 50,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "#212121" : "white",
+            fontSize: 16,
+          }}
+        >
           Full Name
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#212121" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "#212121" : "white"}
             value={fullname}
             onChangeText={(text) => {
               setfullname(text);
@@ -219,21 +184,26 @@ function AddRoyalty() {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "#212121" : "white",
+            fontSize: 16,
+          }}
+        >
           Email
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#212121" : "white",
             width: 200,
           }}
         >
           <TextInput
             keyboardType="email-address"
             autoCapitalize="none"
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "#212121" : "white"}
             value={email}
             onChangeText={(text) => {
               setemail(text);
@@ -250,9 +220,7 @@ function AddRoyalty() {
       >
         <Text
           style={{
-            marginTop: 10,
-            fontFamily: "Trebuchet",
-            color: "white",
+            color: mode == "light" ? "#212121" : "white",
             fontSize: 16,
           }}
         >
@@ -261,27 +229,33 @@ function AddRoyalty() {
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#212121" : "white",
             width: 200,
           }}
         >
-          <IntlPhoneInput
-            containerStyle={{ backgroundColor: "#101820FF", color: "white" }}
-            phoneInputStyle={{ color: "white" }}
-            dialCodeTextStyle={{ color: "white", marginLeft: 10 }}
+          {/* <IntlPhoneInput
+            containerStyle={{
+              backgroundColor: mode == "light" ? "#fff" : "#000",
+              color: "white",
+            }}
+            phoneInputStyle={{ color: mode == "light" ? "black" : "white" }}
+            dialCodeTextStyle={{
+              color: mode == "light" ? "black" : "white",
+              marginLeft: 10,
+            }}
             onChangeText={onChangeText}
             defaultCountry="NG"
             flagStyle={{}}
-          />
+          /> */}
 
-          {/* <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+          <TextInput
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "#000" : "white"}
             value={phone}
             onChangeText={(text) => {
               setphone(text);
             }}
-          /> */}
+          />
         </View>
       </View>
       <View
@@ -291,20 +265,25 @@ function AddRoyalty() {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "#212121" : "white",
+            fontSize: 16,
+          }}
+        >
           Share (%)
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#212121" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             keyboardType="number-pad"
-            placeholderTextColor="white"
+            placeholderTextColor={mode == "light" ? "#212121" : "white"}
             value={share}
             onChangeText={(text) => {
               setshare(text);
@@ -319,20 +298,24 @@ function AddRoyalty() {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "#212121" : "white",
+            fontSize: 16,
+          }}
+        >
           Description
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#212121" : "white",
             width: 200,
           }}
         >
           <TextInput
-            
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={styles[`textInput${mode}`]}
+            placeholderTextColor={mode == "light" ? "#212121" : "white"}
             value={description}
             onChangeText={(text) => {
               setdescription(text);
@@ -340,49 +323,68 @@ function AddRoyalty() {
           />
         </View>
       </View>
-    
+
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "center",
+          justifyContent: "flex-start",
+          marginLeft: 20,
           marginTop: 40,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "#212121" : "white",
+            fontSize: 16,
+          }}
+        >
           Which song do you want to add this royalty to?
         </Text>
       </View>
 
-      <View style={{marginLeft:20, marginRight:20, marginTop:20}}>
-      
-      </View>
+      <View style={{ marginLeft: 20, marginRight: 20, marginTop: 20 }}></View>
 
       <DropDownPicker
-      items={songList && songList}
-      placeholder="Select Song"
-      selectedLabelStyle={{ color: "white" }}
-      placeholderStyle={{ color: "white" }}
-      containerStyle={{ height: 80 }}
-      style={{ backgroundColor: "#ffffff10", margin: 15, borderWidth: 0 }}
-      itemStyle={{
-        justifyContent: "flex-start",
-      }}
-      dropDownStyle={{ backgroundColor: "#fafafa" }}
-      onChangeItem={(item) =>
-        // this.setState({
-        //   country: item.value,
-        // })
-        setsong(item.value)
-      } />
-      
-    
+        items={songs.data.results.map((song) => {
+          return { value: song.id, label: song.title };
+        })}
+        placeholder="Pick a song"
+        selectedLabelStyle={{
+          color: mode == "light" ? "#212121" : "white",
+          fontSize: 16,
+        }}
+        placeholderStyle={{
+          color: mode == "light" ? "#212121" : "white",
+          fontSize: 16,
+        }}
+        containerStyle={{ height: 80 }}
+        style={{
+          backgroundColor: mode == "light" ? "#ffffff" : "#000000",
+          margin: 5,
+          borderWidth: 0,
+        }}
+        itemStyle={{
+          justifyContent: "flex-start",
+        }}
+        dropDownStyle={{
+          backgroundColor: "#fafafa",
+          margin: 20,
+          width: "91%",
+        }}
+        onChangeItem={(item) =>
+          // this.setState({
+          //   country: item.value,
+          // })
+          setsong(item.value)
+        }
+      />
 
       <Button
         style={{
           paddingLeft: 10,
           paddingRight: 10,
           width: width - 40,
-          backgroundColor: "#ffffff10",
+          backgroundColor: mode == "light" ? "#00000050" : "#ffffff10",
           height: 50,
           alignItems: "center",
           justifyContent: "center",
@@ -396,9 +398,9 @@ function AddRoyalty() {
           <Text
             style={{
               textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 13,
+              color: mode == "light" ? "white" : "white",
+
+              fontSize: 15,
             }}
           >
             Add Royalty
@@ -412,12 +414,21 @@ function AddRoyalty() {
 export default AddRoyalty;
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#101820FF",
+  containerlight: {
+    backgroundColor: "#fff",
   },
-  textInput: {
+  containerdark: {
+    backgroundColor: "#000",
+  },
+
+  textInputlight: {
+    color: "#000",
+
+    fontSize: 16,
+  },
+  textInputdark: {
     color: "white",
-    fontFamily: "Trebuchet",
+
     fontSize: 16,
   },
   containerNoRoyalty: {
@@ -469,7 +480,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -479,7 +489,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

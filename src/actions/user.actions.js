@@ -9,6 +9,7 @@ export const userActions = {
   updateProfile,
   clearToastMessage,
   updateDp,
+  setAppearance,
 };
 
 function updateProfile(
@@ -20,7 +21,7 @@ function updateProfile(
   dp_id,
   id,
   token,
-  
+
   address,
   dob,
   lga,
@@ -121,17 +122,30 @@ function getArtist(token) {
         dispatch(getArtist(value));
       })
       .catch((err) => {
-        console.log(err);
+        if (err.status == 401) {
+          dispatch(getArtistFailed(false));
+        }
       });
   };
 
   function getArtist(artist) {
     return { type: userConstants.GET_ARTIST, artist };
   }
+
+  function getArtistFailed(authorized) {
+    return { type: userConstants.GET_ARTIST_FAILURE, authorized };
+  }
 }
 
 function clearToastMessage() {
   return {
     type: userConstants.CLEAR_TOAST,
+  };
+}
+
+function setAppearance(mode) {
+  return {
+    type: userConstants.SET_APPEARANCE,
+    mode: mode,
   };
 }

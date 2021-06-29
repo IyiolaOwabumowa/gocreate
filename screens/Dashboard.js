@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect } from "react";
 //import * as Linking from "expo-linking";
 //import * as WebBrowser from "expo-web-browser";
 import { useSelector, useDispatch } from "react-redux";
-import Video from "react-native-video"
+import Video from "react-native-video";
 import { Spinner } from "native-base";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { authActions } from "../src/actions/auth.actions";
@@ -24,30 +24,21 @@ import {
   Alert,
   Modal,
   Platform,
-  Linking
+  Linking,
 } from "react-native";
-import { Button, Input, Item } from "native-base";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faTv,
-  faPodcast,
-  faStream,
-  faPlay,
-  faPlayCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import validateInput from "../assets/utils/validation";
-import FileDisplayItem from "./FileDisplayItem";
+import PureChart from "react-native-pure-chart";
+
 import { ScrollView } from "react-native-gesture-handler";
 import LineGraph from "./LineGraph";
 import BarChartComponent from "./BarChartComponent";
 import { useIsFocused } from "@react-navigation/native";
 import DashboardRectangles from "./DashboardRectangles";
-import { AntDesign } from "@expo/vector-icons";
 import { songActions } from "../src/actions/song.actions";
 import { advertsActions } from "../src/actions/adverts.actions";
 
 import axios from "axios";
 import advertsReducer from "../src/reducers/adverts.reducers";
+import { subscriptionActions } from "../src/actions/subscription.actions";
 
 const width = Dimensions.get("window").width;
 const iosBg = require("../assets/bg-app.png");
@@ -62,6 +53,7 @@ let logo = Platform.OS === "ios" ? iosLogo : androidLogo;
 const Dashboard = (props) => {
   const dispatch = useDispatch();
   const headerHeight = useHeaderHeight();
+  const mode = useSelector((state) => state.userReducer.mode);
 
   const loggingIn = useSelector((state) => state.authReducer.loggingIn);
   const loginError = useSelector((state) => state.authReducer.errorMessage);
@@ -71,36 +63,42 @@ const Dashboard = (props) => {
   const songs = useSelector((state) =>
     state.songReducer.songs ? state.songReducer.songs : null
   );
-
-  const adverts = useSelector((state) =>
-    state.advertsReducer.adverts ? state.advertsReducer.adverts : null
-  );
-
-  const phone = useSelector((state) =>
-    state.userReducer.artist ? state.userReducer.artist.phone : null
-  );
-  const phone_verified = useSelector((state) =>
-    state.userReducer.artist ? state.userReducer.artist.phone_verified : null
-  );
   const token = useSelector((state) => state.authReducer.token);
   const buttonLoader = useSelector((state) => state.authReducer.buttonLoader);
   const currentYear = new Date().getFullYear();
-  const [email, setEmail] = useState(null);
-  const [emailError, setEmailError] = useState("");
-  const [password, setPassword] = useState(null);
-  const [passwordError, setPasswordError] = useState("");
-  const [header, setHeaderHeight] = useState(headerHeight);
-  const [showAlert, setShowAlert] = useState(false);
-  const [showAlertTest, setShowAlertTest] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
   const [payouts, setPayouts] = useState(null);
   const [month, setMonth] = useState("");
-  const [year, setYear] = useState(currentYear);
+  const [year, setYear] = useState("2021");
   const [chartData, setChartData] = useState([]);
   const [monthData, setMonthData] = useState([]);
   const [adsNo, setAdsNo] = useState([]);
   const [adPosition, setAdPosition] = useState(0);
   const isFocused = useIsFocused();
+
+  let sampleData = [
+    {
+      seriesName: "series1",
+      data: [
+        { x: "2018-02-01", y: 30 },
+        { x: "2018-02-02", y: 200 },
+        { x: "2018-02-03", y: 170 },
+        { x: "2018-02-04", y: 250 },
+        { x: "2018-02-05", y: 10 },
+      ],
+      color: "#297AB1",
+    },
+    {
+      seriesName: "series2",
+      data: [
+        { x: "2018-02-01", y: 20 },
+        { x: "2018-02-02", y: 100 },
+        { x: "2018-02-03", y: 140 },
+        { x: "2018-02-04", y: 550 },
+        { x: "2018-02-05", y: 40 },
+      ],
+      color: "yellow",
+    },
+  ];
 
   function separators(num) {
     var num_parts = num.toString().split(".");
@@ -109,7 +107,7 @@ const Dashboard = (props) => {
   }
 
   const getPayouts = (month, year) => {
-    return axios
+   axios
       .get(
         `https://web.gocreateafrica.app/api/v1/payouts/artist/${year}/`,
 
@@ -211,62 +209,43 @@ const Dashboard = (props) => {
   };
 
   useEffect(() => {
-    dispatch(userActions.getArtist(token));
-    if (isFocused) {
-      if (phone_verified == true) {
-        setModalVisible(false);
-      } else {
-        setModalVisible(true);
-      }
-    }
-  }, [phone_verified, isFocused]);
-
-  useEffect(() => {
-    loadPlayCount();
-    dispatch(advertsActions.getAdverts());
-  }, []);
-
-
-
-  useEffect(() => {
-    var count = adverts?.data.results.length - 1
-
-    const adInterval = setInterval(()=>{
-
-      if( count == 0 ){
-        count = adverts?.data.results.length - 1 
-        setAdPosition(count);
-      }
-
-      if(count < adverts?.data.results.length){
-        count -= 1
-        setAdPosition(count);
-      } 
-
-     }, 8000)
-
-      return ()=>{
-        clearInterval(adInterval)
-      }
-
-  }, []);
-
-
-
-
-  useEffect(() => {
-    if (isFocused) {
-      getPayouts("", "2020");
+    if(!songs){
       dispatch(songActions.getSongs(token));
-
+      dispatch(subscriptionActions.getAvailableSubscriptions(token));
+      dispatch(subscriptionActions.getArtistSubscriptions(token));
     }
-  }, [isFocused]);
+  }, [])
 
+  useEffect(() => {
+    if (songs != null) {
+      getPayouts("", "2020");
+    }
+  }, [songs]);
 
+  // useEffect(() => {
+  //   loadPlayCount();
+  //   dispatch(advertsActions.getAdverts());
+  // }, []);
 
-  const green = "#006B38FF";
-  const blue = "#020650";
-  const pink = "#82013d";
+  // useEffect(() => {
+  //   var count = adverts?.data.results.length - 1;
+
+  //   const adInterval = setInterval(() => {
+  //     if (count == 0) {
+  //       count = adverts?.data.results.length - 1;
+  //       setAdPosition(count);
+  //     }
+
+  //     if (count < adverts?.data.results.length) {
+  //       count -= 1;
+  //       setAdPosition(count);
+  //     }
+  //   }, 8000);
+
+  //   return () => {
+  //     clearInterval(adInterval);
+  //   };
+  // }, []);
 
   const royaltyCount = (songs) => {
     const arr = songs && songs.data.results;
@@ -290,64 +269,10 @@ const Dashboard = (props) => {
   };
 
   return (
-    <ImageBackground style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          Alert.alert("Modal has been closed.");
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <AntDesign name={"message1"} size={50} color="#9DC828" />
-
-            <Text style={styles.modalText}>Phone Verification Required</Text>
-            <Text style={{ textAlign: "center" }}>
-              To continue using our app, kindly verify your registered phone
-              number.
-            </Text>
-            <Button
-              onPress={() => {
-                props.navigation.navigate("OTP", { phone: phone });
-                setModalVisible(false);
-              }}
-              style={{
-                backgroundColor: "#010114",
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: 50,
-              }}
-            >
-              <Text
-                style={{ color: "white", paddingLeft: 30, paddingRight: 30 }}
-              >
-                Proceed to Verification
-              </Text>
-            </Button>
-
-            <Button
-              onPress={() => {
-                dispatch(authActions.deleteUserToken());
-              }}
-              style={{
-                backgroundColor: "#010114",
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: 50,
-              }}
-            >
-              <Text
-                style={{ color: "white", paddingLeft: 30, paddingRight: 30 }}
-              >
-                Logout
-              </Text>
-            </Button>
-          </View>
-        </View>
-      </Modal>
+    <ImageBackground style={styles[`container${mode}`]}>
+      <StatusBar
+        barStyle={mode == "light" ? "dark-content" : "light-content"}
+      />
       <ScrollView showsVerticalScrollIndicator={false}>
         <DashboardRectangles
           // heading={payouts.data.results == null ? 0 :  payoutCount(payouts)}
@@ -357,32 +282,40 @@ const Dashboard = (props) => {
               : payoutCount(payouts)
           }
           sub="Worth of Recent Payouts"
-          color={"#010114"}
+          color={mode == "light" ? "#ffffff" : "#111111"}
+          mode={mode}
           icon="credit-card"
         />
         <DashboardRectangles
           heading={
-            songs == null || songs.status == 401 ? null : royaltyCount(songs)
+            songs == null || songs.status == 401 ? 0 : royaltyCount(songs)
           }
           sub={
             songs != null && songs.status != 401 && royaltyCount(songs) == 1
               ? `Royalty in Total`
               : `Royalties in Total`
           }
-          color={"#010114"}
+          color={mode == "light" ? "#ffffff" : "#111111"}
+          mode={mode}
           icon="coins"
         />
         <DashboardRectangles
-          heading={songs == null || songs.status == 401 ? 0 :   separators(songs.data.count)}
+          heading={
+            songs == null || songs.status == 401
+              ? 0
+              : separators(songs.data.count)
+          }
           sub={
             songs != null && songs.status != 401 && songs.data.count == 1
               ? "Song Uploaded"
               : "Songs Uploaded"
           }
-          color={"#010114"}
+          color={mode == "light" ? "#ffffff" : "#111111"}
+          mode={mode}
           icon="music"
         />
-        <View style={{ marginBottom: 30 }}></View>
+        <View style={{ marginBottom: 18 }}></View>
+        {/* <PureChart data={sampleData} type="bar" /> */}
 
         {/*
     <LineGraph
@@ -390,29 +323,21 @@ const Dashboard = (props) => {
          chartData={chartData && chartData}
          monthData={monthData && monthData}
         /> */}
-
+        {/* 
         {adverts && (
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => {
-              Linking.openURL(adverts.data.results[adPosition].link)     
+              Linking.openURL(adverts.data.results[adPosition].link);
             }}
           >
             <Image
               source={{ uri: adverts.data.results[adPosition].file }}
-              style={{ height: 200, width: "100%", borderRadius: 5 }}
+              style={{ height: 150, width: "100%", borderRadius: 5 }}
             />
           </TouchableOpacity>
-        )}
+        )} */}
 
-        <Video
-          source={{ uri: 'https://vimeo.com/526163145' }}
-          style={styles.backgroundVideo}
-          controls={false}
-          muted={true}
-          ref={(ref) => {
-          const player = ref
-          }} />
         {/* 
         {adverts &&
           adverts.data.results.map((item) => {
@@ -433,9 +358,15 @@ const Dashboard = (props) => {
 export default Dashboard;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor: "#101820FF",
+    backgroundColor: "#00000010",
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000000",
     paddingLeft: 10,
     paddingRight: 10,
   },
@@ -447,8 +378,9 @@ const styles = StyleSheet.create({
   },
 
   backgroundVideo: {
-    position: 'absolute',
-    height: 200, width: "100%", 
+    position: "absolute",
+    height: 200,
+    width: "100%",
     top: 0,
     left: 0,
     bottom: 0,
@@ -487,7 +419,7 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: "center",
-    fontFamily: "Trebuchet",
+
     fontSize: 18,
     marginTop: 30,
   },
@@ -544,18 +476,17 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "black",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#000",
-    fontFamily: "Trebuchet",
+
     paddingLeft: 20,
     paddingRight: 20,
     marginTop: 10,
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginTop: 30,
     marginBottom: 20,
     textAlign: "center",

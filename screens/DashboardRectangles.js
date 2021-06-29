@@ -11,7 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
-import { FontAwesome5 } from "@expo/vector-icons";
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const width = Dimensions.get("window").width;
 
@@ -20,7 +20,7 @@ function DashboardRectangles(props) {
     <View
       style={{
         backgroundColor: props.color,
-        height: 200,
+        height: 150,
         borderRadius: 5,
         marginTop: 20,
       }}
@@ -33,21 +33,27 @@ function DashboardRectangles(props) {
           padding: 30,
         }}
       >
-        <Text style={{ color: "white", fontFamily: "Trebuchet", fontSize: 30 }}>
-          {props.heading} {props.icon == "credit-card" ? "Naira" : null}
+        <Text
+          style={{
+            color: props.mode == "light" ? "#000" : "#ffffff",
+            
+            fontSize: 30,
+          }}
+        >
+          {props.icon == "credit-card" ? "$" : null}
+          {props.heading}
         </Text>
         <FontAwesome5 name={props.icon} size={24} color="#9DC828" />
       </View>
       <Text
         style={{
-          color: "white",
-          fontFamily: "Trebuchet",
+          color: props.mode == "light" ? "#000" : "#ffffff",
+          
           fontSize: 14,
           paddingLeft: 30,
-          marginTop: 30,
         }}
       >
-       {props.sub}
+        {props.sub}
       </Text>
     </View>
   );
@@ -107,7 +113,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#F46270",
@@ -117,7 +123,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+    
     marginLeft: 20,
     marginTop: 20,
   },

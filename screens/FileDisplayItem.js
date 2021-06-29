@@ -43,7 +43,7 @@ function FileDisplayItem() {
         <View>
           <Text
             style={{
-              fontFamily: "Trebuchet",
+              
               fontSize: 17,
               color: "#000",
             }}
@@ -52,7 +52,7 @@ function FileDisplayItem() {
           </Text>
           <Text
             style={{
-              fontFamily: "Trebuchet",
+              
               fontSize: 13,
               color: "#1A5C79",
             }}
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#F46270",
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+    
     marginLeft: 20,
     marginTop: 20,
   },

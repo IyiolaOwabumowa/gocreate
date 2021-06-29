@@ -45,7 +45,7 @@ function ComingSoon() {
             style={{ width: "40%", height: "30%", resizeMode: "contain" }}
           />
         )}
-        <Text style={{paddingLeft:40, paddingRight:40, marginTop:50, marginBottom:50, fontSize:20, textAlign:"center", fontFamily:"Trebuchet", color:"#9DC828" , lineHeight:40}}>
+        <Text style={{paddingLeft:40, paddingRight:40, marginTop:50, marginBottom:50, fontSize:20, textAlign:"center",  color:"#9DC828" , lineHeight:40}}>
           Thank you for having an account with us.
          {"\n"} <Text style={{ fontSize:17, textAlign:"center", color:"#1B5671"}}> We'll notify you when we launch!</Text>
         </Text>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
+    
   },
   errorMessage: {
     color: "#000",
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+    
     marginTop: 20,
     textAlign: "center",
   },

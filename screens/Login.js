@@ -32,6 +32,7 @@ let logo = Platform.OS === "ios" ? iosLogo : androidLogo;
 
 const Login = (props) => {
   const dispatch = useDispatch();
+  const mode = useSelector((state) => state.userReducer.mode);
   const loggingIn = useSelector((state) => state.authReducer.loggingIn);
   const loginError = useSelector((state) => state.authReducer.errorMessage);
   const [email, setEmail] = useState(null);
@@ -63,7 +64,7 @@ const Login = (props) => {
   };
 
   return (
-    <ImageBackground  style={styles.container}>
+    <ImageBackground style={styles[`container${mode}`]}>
       <KeyboardAwareScrollView
         style={styles.kContainer}
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
@@ -74,7 +75,9 @@ const Login = (props) => {
         enabled
         enableOnAndroid={true}
       >
-        <StatusBar barStyle="light-content" />
+        <StatusBar
+          barStyle={mode == "light" ? "dark-content" : "light-content"}
+        />
         <View style={{ alignItems: "center" }}>
           {Platform.OS === "ios" ? (
             <Image
@@ -88,16 +91,15 @@ const Login = (props) => {
             />
           )}
         </View>
-
         <View>
-          <Text style={styles.loginInfo}>Enter your login details</Text>
+          <Text style={styles[`subtext${mode}`]}>Enter your login details</Text>
         </View>
-        <Item style={[styles.itemStyle, { marginTop: 20 }]}>
+        <Item style={[styles[`itemStyle${mode}`], { marginTop: 20 }]}>
           <Input
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             placeholder="Email"
-            placeholderTextColor="#fff"
-            keyboardAppearance={"dark"}
+            placeholderTextColor={mode == "dark" ? "#fff" : "#000"}
+            keyboardAppearance={mode}
             spellCheck={false}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -105,43 +107,38 @@ const Login = (props) => {
             onChangeText={(text) => {
               setEmail(text);
               setEmailError(validateInput({ type: "email", value: text }));
-              dispatch(authActions.clearErrors());
             }}
           />
         </Item>
         <View>
           {emailError ? (
-            <Text style={styles.errorMessage}>{emailError}</Text>
+            <Text style={styles[`errorMessage${mode}`]}>{emailError}</Text>
           ) : null}
         </View>
-        <Item style={[styles.itemStyle, { marginTop: 15 }]}>
+        <Item style={[styles[`itemStyle${mode}`], { marginTop: 15 }]}>
           <Input
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             placeholder="Password"
-            placeholderTextColor="#fff"
+            placeholderTextColor={mode == "dark" ? "#fff" : "#000"}
             secureTextEntry={true}
-            keyboardAppearance={"dark"}
+            keyboardAppearance={mode}
             value={password}
             onChangeText={(text) => {
               setPassword(text);
               setPasswordError(
                 validateInput({ type: "password", value: text })
               );
-
-              dispatch(authActions.clearErrors());
             }}
           />
         </Item>
         <View>
           {passwordError ? (
-            <Text style={styles.errorMessage}>{passwordError}</Text>
+            <Text style={styles[`errorMessage${mode}`]}>{passwordError}</Text>
           ) : null}
         </View>
-
         {loginError ? (
-          <Text style={styles.errorMessage}>{loginError}</Text>
+          <Text style={styles[`errorMessage${mode}`]}>{loginError}</Text>
         ) : null}
-
         <View style={{ marginTop: 10 }}>
           <Button
             onPress={() => {
@@ -161,27 +158,6 @@ const Login = (props) => {
               </>
             )}
           </Button>
-          {/* {Platform.OS === "ios" ? (
-            <Image
-              source={require("../assets/ad-2.jpeg")}
-              style={{
-                width: width,
-                height: 100,
-                marginTop: 20,
-                resizeMode: "contain",
-              }}
-            />
-          ) : (
-            <Image
-              source={{ uri: "asset:/images/ad-2.jpeg" }}
-              style={{
-                width: width,
-                height: 100,
-                marginTop: 20,
-                resizeMode: "contain",
-              }}
-            />
-          )} */}
 
           <View style={{ marginTop: 50 }}>
             <TouchableOpacity
@@ -190,12 +166,7 @@ const Login = (props) => {
               }}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.tinyText,
-                  { textAlign: "center", color: "white", fontSize: 14 },
-                ]}
-              >
+              <Text style={styles[`subtext${mode}`]}>
                 Don't have an account? Sign Up
               </Text>
             </TouchableOpacity>
@@ -206,17 +177,7 @@ const Login = (props) => {
               }}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.tinyText,
-                  {
-                    fontSize: 14,
-                    textAlign: "center",
-                    color: "white",
-                    marginTop: 30,
-                  },
-                ]}
-              >
+              <Text style={styles[`subtext${mode}`]}>
                 Forgot Password? Click Here!
               </Text>
             </TouchableOpacity>
@@ -230,21 +191,47 @@ const Login = (props) => {
 export default Login;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor:"#101820FF",
+    backgroundColor: "#fff",
+    alignItems: "center",
     justifyContent: "center",
   },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  subtextlight: {
+    textAlign: "center",
+    color: "black",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+
+  subtextdark: {
+    textAlign: "center",
+    color: "white",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+
   kContainer: {
     flex: 1,
   },
 
-  textInput: {
+  textInputlight: {
+    color: "#000",
+    fontSize: 14,
+    paddingLeft: 25,
+  },
+  textInputdark: {
     color: "#ffffff",
     fontSize: 14,
     paddingLeft: 25,
   },
-  itemStyle: {
+  itemStyledark: {
     borderColor: "#ffffff00",
     backgroundColor: "#ffffff10",
     marginLeft: 20,
@@ -252,14 +239,21 @@ const styles = StyleSheet.create({
 
     borderRadius: 5,
   },
+  itemStylelight: {
+    borderColor: "#ffffff00",
+    backgroundColor: "#00000020",
+    marginLeft: 20,
+    marginRight: 20,
+
+    borderRadius: 5,
+  },
   tinyText: {
-    fontFamily: "Trebuchet",
     fontSize: 12,
     marginTop: 17,
   },
 
   registerButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#111",
 
     height: 60,
     width: width - 40,
@@ -269,8 +263,8 @@ const styles = StyleSheet.create({
     paddingRight: 30,
   },
   loginButton: {
-    backgroundColor: "#1A5C79",
-    marginTop:20,
+    backgroundColor: "#111",
+    marginTop: 20,
     height: 50,
     width: width - 40,
     paddingLeft: 30,
@@ -280,18 +274,24 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
-  errorMessage: {
-    color: "#fff",
-    fontFamily: "Trebuchet",
+  errorMessagelight: {
+    color: "#00000090",
+
+    paddingLeft: 20,
+    paddingRight: 20,
+    marginTop: 10,
+  },
+  errorMessagedark: {
+    color: "#ffffff70",
+
     paddingLeft: 20,
     paddingRight: 20,
     marginTop: 10,
   },
   loginInfo: {
     color: "white",
-    fontFamily: "Trebuchet",
+
     marginTop: 20,
     marginBottom: 10,
     textAlign: "center",

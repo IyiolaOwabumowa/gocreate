@@ -1,14 +1,8 @@
-// module.exports = {
-//     assets: ['./assets/fonts/']
-// };
-
 module.exports = {
   project: {
     ios: {},
-    android: {
-    //This link will change according to your android file location. That is if you have a custom directory
-    "sourceDir": "./android/app/src"
-    },
+    android: {},
   },
-  assets: ['./assets/fonts'],
+  assets: ['./assets/fonts/'],
+  dependencies: {}, // make sure this deps are all valid installed packages or empty if you don't need it
 };

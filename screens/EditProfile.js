@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
+import CountryPicker, {
+  DARK_THEME,
+  FlagButton,
+} from "react-native-country-picker-modal";
 import { TextInputMask } from "react-native-masked-text";
-import IntlPhoneInput from "react-native-intl-phone-input";
-import * as ImagePicker from "expo-image-picker";
-import Constants from "expo-constants";
+import {
+  launchCamera,
+  launchImageLibrary,
+  ImagePicker,
+} from "react-native-image-picker";
 import * as Permissions from "expo-permissions";
 import moment from "moment";
+
 import {
   StyleSheet,
   StatusBar,
@@ -35,26 +42,21 @@ import {
   faPlay,
   faPlayCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  Ionicons,
-} from "@expo/vector-icons";
+
 import { ScrollView } from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { userActions } from "../src/actions/user.actions";
-import { Spinner } from "native-base";
+import { Spinner, Input } from "native-base";
+import FastImage from "react-native-fast-image";
 
 const width = Dimensions.get("window").width;
 
-function EditProfile({ route }) {
+const EditProfile = ({ navigation, route }) => {
   const dispatch = useDispatch();
+  const mode = useSelector((state) => state.userReducer.mode);
   const [firstName, setfirstName] = useState(null);
   const [lastName, setlastName] = useState(null);
-  const [phone, setphone] = useState(null);
+  const [phone, setPhone] = useState(null);
   const [email, setemail] = useState(null);
   const [dob, setdob] = useState(null);
   const [address, setaddress] = useState(null);
@@ -63,7 +65,7 @@ function EditProfile({ route }) {
   const [image, setimage] = useState(null);
   const [loader, setloader] = useState(false);
 
-  const { imageUrl } = route.params;
+  const imageUrl = artist ? artist.dp.image : null;
 
   const token = useSelector((state) => state.authReducer.token);
 
@@ -79,18 +81,29 @@ function EditProfile({ route }) {
   const message = useSelector((state) => state.userReducer.toastMessage);
   const buttonLoader = useSelector((state) => state.userReducer.loading);
 
+  let options = {
+    title: "Select Image",
+    customButtons: [
+      { name: "customOptionKey", title: "Choose Photo from Custom Option" },
+    ],
+    storageOptions: {
+      skipBackup: true,
+      path: "images",
+    },
+  };
+
   useEffect(() => {
     setimage(imageUrl);
   }, []);
 
   useEffect(() => {
     setimage(artist.dp.image);
-  }, [artist.dp.image]);
+  }, []);
 
   useEffect(() => {
     setfirstName(artist.first_name);
     setlastName(artist.last_name);
-    setphone(artist.phone);
+    setPhone(artist.phone);
     setemail(artist.email);
     setdob(artist.dob);
     setaddress(artist.address);
@@ -106,11 +119,12 @@ function EditProfile({ route }) {
           fontSize: 14,
           paddingLeft: 10,
         },
-        duration: 10000,
+        duration: 3000,
         style: {
           backgroundColor: "#9DC828",
         },
         onClose: () => {
+          dispatch(userActions.getArtist(token));
           dispatch(authActions.clearToastMessage());
         },
       });
@@ -165,71 +179,83 @@ function EditProfile({ route }) {
       );
     }
   };
-  const onChangeText = ({
-    dialCode,
-    unmaskedPhoneNumber,
-    phoneNumber,
-    isVerified,
-  }) => {
-    setphone(dialCode + "" + unmaskedPhoneNumber);
-  };
-  // const renderCustomModal = (modalVisible, countries, onCountryChange) => (
-  //   <Modal visible={modalVisible}>
-  //     <SafeAreaView style={{ flex: 1 }}>
-  //       <View>
-  //         <View>
-  //           <TextInput placeholder="Search" />
-  //           <Text>🔍</Text>
-  //         </View>
-  //         <FlatList
-  //           style={{ flex: 1 }}
-  //           data={countries}
-  //           keyExtractor={(item, index) => index.toString()}
-  //           renderItem={({ item }) => (
-  //             <TouchableWithoutFeedback
-  //               onPress={() => onCountryChange(item.code)}
-  //             >
-  //               <Text>{item["your language code here for example tr"]}</Text>
-  //             </TouchableWithoutFeedback>
-  //           )}
-  //         />
-  //       </View>
-  //       <TouchableOpacity onPress={() =>  phoneInput.hideModal()}>
-  //         <Text>CLOSE</Text>
-  //       </TouchableOpacity>
-  //     </SafeAreaView>
-  //   </Modal>
-  // );
+
+  const renderCustomModal = (modalVisible, countries, onCountryChange) => (
+    <Modal visible={modalVisible}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View>
+          <View>
+            <TextInput placeholder="Search" />
+            <Text>🔍</Text>
+          </View>
+          <FlatList
+            style={{ flex: 1 }}
+            data={countries}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <TouchableWithoutFeedback
+                onPress={() => onCountryChange(item.code)}
+              >
+                <Text>{item["your language code here for example tr"]}</Text>
+              </TouchableWithoutFeedback>
+            )}
+          />
+        </View>
+        <TouchableOpacity onPress={() => phoneInput.hideModal()}>
+          <Text>CLOSE</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    </Modal>
+  );
 
   const getPermissionAsync = async () => {
-    const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+    const { status } = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
     if (status !== "granted") {
       alert("Sorry, we need camera roll permissions to make this work!");
     }
   };
 
   const choosePhotoFromLibrary = async () => {
-    try {
-      getPermissionAsync();
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: false,
-        aspect: [4, 3],
-        quality: 1,
-      });
-      if (!result.cancelled) {
-        setimage(result.uri);
+    // try {
+    //   getPermissionAsync();
+    //   let result = await ImagePicker.launchImageLibraryAsync({
+    //     mediaTypes: ImagePicker.MediaTypeOptions.All,
+    //     allowsEditing: false,
+    //     aspect: [4, 3],
+    //     quality: 1,
+    //   });
+    //   if (!result.cancelled) {
+    //     setImage(result.uri);
+    //   }
+    // } catch (E) {
+    //   console.log(E);
+    // }
+
+    launchImageLibrary(options, (response) => {
+      // console.log("Response = ", response);
+
+      if (response.didCancel) {
+        // alert("User cancelled camera picker");
+        return;
+      } else if (response.errorCode == "camera_unavailable") {
+        //alert("Camera not available on device");
+        return;
+      } else if (response.errorCode == "permission") {
+        // alert("Permission not satisfied");
+        return;
+      } else if (response.errorCode == "others") {
+        // alert(response.errorMessage);
+        return;
       }
 
-      console.log(result);
-    } catch (E) {
-      console.log(E);
-    }
+      setimage(response.assets[0].uri);
+    });
   };
+
   return (
     <KeyboardAwareScrollView
-      style={{ backgroundColor: "#101820FF" }}
-      contentContainerStyle={styles.container}
+      style={{ backgroundColor: mode == "light" ? "white" : "black" }}
+      contentContainerStyle={styles[`container${mode}`]}
       behavior="padding"
       showsVerticalScrollIndicator={false}
       showsHorizontalScrollIndicator={false}
@@ -240,8 +266,9 @@ function EditProfile({ route }) {
     >
       <View
         style={{
-          backgroundColor: "#010114",
+          backgroundColor: mode == "light" ? "#fff" : "#000",
           width: "100%",
+
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -252,114 +279,96 @@ function EditProfile({ route }) {
           </View>
         ) : null}
 
-        {image != null ? (
-          <Image
-            source={{ uri: image }}
-            style={{
-              width: 100,
-              height: 100,
-              borderRadius: 50,
-              marginTop: 30,
-              marginBottom: 30,
-            }}
-            onLoadStart={() => {
-              setloader(true);
-            }}
-            onLoadEnd={() => {
-              setloader(false);
-            }}
-          />
-        ) : (
-          <View
-            style={{
-              backgroundColor: "grey",
-              width: 100,
-              height: 100,
-              borderRadius: 50,
-              marginTop: 30,
-              marginBottom: 30,
-            }}
-          ></View>
-        )}
+        <FastImage
+          source={
+            image != null
+              ? {
+                  uri: image.split("?")[0],
+                  priority: FastImage.priority.high,
+                  cache: FastImage.cacheControl.immutable,
+                }
+              : require("../assets/dummy_avatar.png")
+          }
+          // resizeMode="cover"
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            marginTop: 30,
+            marginBottom: 30,
+          }}
+        />
 
-        <Button
-          style={{
-            padding: 20,
-            backgroundColor: "#ffffff10",
-            height: 30,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 20,
-          }}
-          onPress={() => {
-            choosePhotoFromLibrary();
-          }}
-        >
-          <Text
+        <View style={{ width: "80%" }}>
+          <Button
             style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 13,
-            }}
-          >
-            Select a display picture
-          </Text>
-        </Button>
-      </View>
-      <View
-        style={{
-          backgroundColor: "#010114",
-          width: "90%",
-          marginLeft: 20,
-          marginRight: 20,
-          justifyContent: "center",
-          alignItems: "center",
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 20,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Ionicons name="ios-person" size={24} color="white" />
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 15,
               padding: 20,
+              width: "100%",
+              backgroundColor: mode == "light" ? "#000" : "#ffffff20",
+              height: 30,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
+            onPress={() => {
+              choosePhotoFromLibrary();
             }}
           >
-            Personal Information
-          </Text>
+            <Text
+              style={{
+                textAlign: "center",
+                color: "white",
+
+                fontSize: 13,
+              }}
+            >
+              Select a display picture
+            </Text>
+          </Button>
         </View>
+      </View>
+
+      <View style={{}}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+
+            fontSize: 23,
+            fontWeight: "700",
+            paddingLeft: 20,
+            marginTop: 40,
+            marginBottom: 10,
+          }}
+        >
+          Let's get to know you
+        </Text>
       </View>
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           First Name
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
+            style={[styles[`textInput${mode}`], { height: 40 }]}
             placeholderTextColor="white"
             value={firstName}
             onChangeText={(text) => {
@@ -373,22 +382,29 @@ function EditProfile({ route }) {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           Last Name
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={[styles[`textInput${mode}`], { height: 40 }]}
+            placeholderTextColor={mode == "light" ? "black" : "white"}
             value={lastName}
             onChangeText={(text) => {
               setlastName(text);
@@ -400,56 +416,69 @@ function EditProfile({ route }) {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           Phone
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
+            height: 40,
             width: 200,
           }}
         >
-          <IntlPhoneInput
-            containerStyle={{ backgroundColor: "#101820FF", color: "white" }}
-            phoneInputStyle={{ color: "white" }}
-            dialCodeTextStyle={{ color: "white", marginLeft: 10 }}
-            onChangeText={onChangeText}
-            defaultCountry="NG"
-          />
-
-          {/* <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+          <Input
+            keyboardType="number-pad"
+            placeholder="Phone number"
             value={phone}
             onChangeText={(text) => {
-              setphone(text);
+              setPhone(text);
             }}
-          /> */}
+            style={{
+              color: mode == "light" ? "black" : "white",
+              fontSize: 15,
+              marginLeft: 1,
+              height: 50,
+            }}
+          />
         </View>
       </View>
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           Email
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
+            style={[styles[`textInput${mode}`], { height: 40 }]}
             placeholderTextColor="white"
             value={email}
             onChangeText={(text) => {
@@ -462,16 +491,23 @@ function EditProfile({ route }) {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           Date of Birth
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
@@ -484,66 +520,58 @@ function EditProfile({ route }) {
             onChangeText={(text) => {
               setdob(text);
             }}
-            placeholderTextColor="white"
+            placeholderTextColor={mode == "light" ? "black" : "white"}
             placeholder="YYYY-MM-DD"
-            style={{ fontSize: 16, fontFamily: "Trebuchet", color: "white" }}
+            style={{
+              fontSize: 16,
+
+              color: mode == "light" ? "black" : "white",
+              height: 40,
+            }}
           />
         </View>
       </View>
-      <View
-        style={{
-          backgroundColor: "#010114",
-          width: "90%",
-          marginLeft: 20,
-          marginRight: 20,
-          justifyContent: "center",
-          alignItems: "center",
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 20,
-        }}
-      >
-        <View
+      <View style={{}}>
+        <Text
           style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            color: mode == "light" ? "black" : "white",
+
+            fontSize: 23,
+            fontWeight: "700",
+            paddingLeft: 20,
+            marginTop: 100,
+            marginBottom: 10,
           }}
         >
-          <Entypo name="location-pin" size={24} color="white" />
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 15,
-              padding: 20,
-            }}
-          >
-            Location Information
-          </Text>
-        </View>
+          A bit about where you live
+        </Text>
       </View>
-
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           Address
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
+            style={[styles[`textInput${mode}`], { height: 40 }]}
             placeholderTextColor="white"
             value={address}
             onChangeText={(text) => {
@@ -556,22 +584,29 @@ function EditProfile({ route }) {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           State
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={[styles[`textInput${mode}`], { height: 40 }]}
+            placeholderTextColor={mode == "light" ? "black" : "white"}
             value={state}
             onChangeText={(text) => {
               setstate(text);
@@ -583,21 +618,28 @@ function EditProfile({ route }) {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
+
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 20,
+          }}
+        >
           LGA
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "black" : "white",
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
+            style={[styles[`textInput${mode}`], { height: 40 }]}
             placeholderTextColor="white"
             value={lga}
             onChangeText={(text) => {
@@ -607,46 +649,56 @@ function EditProfile({ route }) {
         </View>
       </View>
 
-      <Button
-        style={{
-          paddingLeft: 10,
-          paddingRight: 10,
-          width: width - 40,
-          backgroundColor: "#ffffff10",
-          height: 50,
-          alignItems: "center",
-          justifyContent: "center",
-          margin: 20,
-        }}
-        onPress={() => {
-          handleSubmit();
-        }}
-      >
-        {buttonLoader ? (
-          <Spinner color="#fff" size="small" />
-        ) : (
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 13,
-            }}
-          >
-            Update Profile
-          </Text>
-        )}
-      </Button>
+      <View style={{ justifyContent: "center", alignItems: "center" }}>
+        <Button
+          style={{
+            paddingLeft: 10,
+            paddingRight: 10,
+            width: "100%",
+            backgroundColor: mode == "light" ? "#00000090" : "#ffffff20",
+            height: 50,
+            alignItems: "center",
+            justifyContent: "center",
+
+            marginTop: 50,
+            marginBottom: 100,
+          }}
+          onPress={() => {
+            handleSubmit();
+          }}
+        >
+          {buttonLoader ? (
+            <Spinner color="#fff" size="small" />
+          ) : (
+            <Text
+              style={{
+                textAlign: "center",
+                color: "white",
+
+                fontSize: 13,
+              }}
+            >
+              Update Profile
+            </Text>
+          )}
+        </Button>
+      </View>
     </KeyboardAwareScrollView>
   );
-}
+};
 
 export default EditProfile;
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#101820FF",
+  containerlight: {
+    margin: 20,
+    backgroundColor: "#fff",
   },
+  containerdark: {
+    margin: 20,
+    backgroundColor: "#000",
+  },
+
   loading: {
     position: "absolute",
     left: 0,
@@ -657,9 +709,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  textInput: {
+  textInputdark: {
     color: "white",
-    fontFamily: "Trebuchet",
+
+    fontSize: 16,
+  },
+  textInputlight: {
+    color: "black",
+
     fontSize: 16,
   },
   containerNoRoyalty: {
@@ -711,7 +768,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -721,7 +777,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

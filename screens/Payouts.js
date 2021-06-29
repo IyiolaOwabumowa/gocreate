@@ -20,18 +20,9 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { Button, Input, Item, Toast } from "native-base";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import axios from "axios";
-import {
-  faTv,
-  faPodcast,
-  faStream,
-  faPlay,
-  faPlayCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  Feather,
-} from "@expo/vector-icons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import Feather from "react-native-vector-icons/Feather";
+
 import {
   ScrollView,
   TextInput,
@@ -41,7 +32,7 @@ import { authActions } from "../src/actions/auth.actions";
 import { userActions } from "../src/actions/user.actions";
 
 const width = Dimensions.get("window").width;
-const noOfPayouts = 0;
+
 function Payouts(props) {
   const dispatch = useDispatch();
   const [payouts, setPayouts] = useState(null);
@@ -52,22 +43,8 @@ function Payouts(props) {
   const bvn = useSelector((state) =>
     state.userReducer.artist ? state.userReducer.artist.bvn_verified : true
   );
-
+  const mode = useSelector((state) => state.userReducer.mode);
   const token = useSelector((state) => state.authReducer.token);
-
-  useEffect(() => {
-    dispatch(userActions.getArtist(token));
-  }, [JSON.stringify(payouts)]);
-
-  useEffect(() => {
-    getPayouts("", year);
-  }, []);
-
-  function separators(num) {
-    var num_parts = num.toString().split(".");
-    num_parts[0] = num_parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return num_parts.join(".");
-  }
 
   const getPayouts = (month, year) => {
     if (!year) {
@@ -100,7 +77,6 @@ function Payouts(props) {
         }
       )
       .then((response) => {
-        console.log(response.data);
         if (response.status == 200) {
           const successObject = {
             status: response.status,
@@ -127,66 +103,59 @@ function Payouts(props) {
       });
   };
 
-  return (
-    <React.Fragment>
-      <View
-        style={{
-          width: "100%",
-          backgroundColor: "#101820FF",
-        }}
-      >
-        {bvn != true ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => {
-              props.navigation.navigate("BvnDisclaimer");
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#010114",
+  useEffect(() => {
+    getPayouts("", year);
+  }, []);
 
-                height: 80,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Trebuchet",
-                  color: "white",
-                  padding: 20,
-                  textAlign: "center",
-                }}
-              >
-                Without updating your BVN, payouts cannot be made into your
-                account.{" "}
-                <Text style={{ textDecorationLine: "underline" }}>
-                  Click here to update
-                </Text>
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+  function separators(num) {
+    var num_parts = num.toString().split(".");
+    num_parts[0] = num_parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return num_parts.join(".");
+  }
+
+  var SI_SYMBOL = ["", "k", "M", "G", "T", "P", "E"];
+
+  function abbreviateNumber(number) {
+    // what tier? (determines SI symbol)
+    var tier = (Math.log10(Math.abs(number)) / 3) | 0;
+
+    // if zero, we don't need a suffix
+    if (tier == 0) return number;
+
+    // get suffix and determine scale
+    var suffix = SI_SYMBOL[tier];
+    var scale = Math.pow(10, tier * 3);
+
+    // scale the number
+    var scaled = number / scale;
+
+    // format number and add suffix
+    return scaled.toFixed(1) + suffix;
+  }
+
+  return (
+    <View style={styles[`container${mode}`]}>
+      <StatusBar
+        barStyle={mode == "light" ? "dark-content" : "light-content"}
+      />
       <View
         style={{
-          backgroundColor: "#01011499",
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff15",
           height: 50,
           alignItems: "center",
-
           flexDirection: "row",
           paddingLeft: 30,
-          borderBottomColor: "#00000070",
+          borderBottomColor: mode == "light" ? "#00000070" : "#ffffff20",
           borderBottomWidth: 0.3,
         }}
       >
         <TextInput
           placeholder="Month"
-          placeholderTextColor="#000"
+          placeholderTextColor={mode == "light" ? "#000" : "#ffffff50"}
           style={{
             flex: 1,
-            fontFamily: "Trebuchet",
             fontSize: 15,
-            color: "#000",
+            color: mode == "light" ? "#000" : "#ffffff50",
           }}
           keyboardType="number-pad"
           maxLength={2}
@@ -199,17 +168,21 @@ function Payouts(props) {
 
       <View
         style={{
-          backgroundColor: "#01011499",
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff15",
           height: 50,
           justifyContent: "center",
           paddingLeft: 30,
+          borderBottomColor: mode == "light" ? "#00000070" : "#ffffff20",
           borderBottomWidth: 0.3,
         }}
       >
         <TextInput
           placeholder="Year"
-          placeholderTextColor="#000"
-          style={{ fontFamily: "Trebuchet", fontSize: 15, color: "#000" }}
+          placeholderTextColor={mode == "light" ? "#000" : "#ffffff50"}
+          style={{
+            fontSize: 15,
+            color: mode == "light" ? "#000" : "#ffffff50",
+          }}
           keyboardType="number-pad"
           maxLength={4}
           value={year}
@@ -222,7 +195,7 @@ function Payouts(props) {
       <TouchableOpacity
         activeOpacity={0.98}
         style={{
-          backgroundColor: "#010114",
+          backgroundColor: mode == "light" ? "#00000010" : "#ffffff15",
           height: 50,
           alignItems: "center",
           justifyContent: "center",
@@ -237,16 +210,20 @@ function Payouts(props) {
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {loading ? (
-            <Spinner color="#fff" size="small" />
+            <Spinner color={mode == "light" ? "#000" : "#fff"} size="small" />
           ) : (
             <>
-              <Feather name="search" size={18} color="white" />
+              <Feather
+                name="search"
+                size={18}
+                color={mode == "light" ? "#000" : "#fff"}
+              />
               <Text
                 style={{
                   marginLeft: 10,
-                  fontFamily: "Trebuchet",
+
                   fontSize: 14,
-                  color: "white",
+                  color: mode == "light" ? "#000" : "#fff",
                 }}
               >
                 Filter Payouts
@@ -259,13 +236,27 @@ function Payouts(props) {
       {(payouts && payouts.length == 0) ||
       (payouts && payouts.status == 404) ? (
         <ScrollView
-          style={{ backgroundColor: "#101820FF" }}
-          contentContainerStyle={styles.containerNoPayouts}
+          style={{ backgroundColor: mode == "light" ? "#00000010" : "#000" }}
+          contentContainerStyle={styles[`container${mode}`]}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <FontAwesome5 name={"money-check"} size={20} color="white" />
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <FontAwesome5
+              name={"money-check"}
+              size={20}
+              color={mode == "light" ? "black" : "white"}
+            />
             <Text
-              style={{ fontFamily: "Trebuchet", color: "white", padding: 20 }}
+              style={{
+                color: mode == "light" ? "black" : "white",
+                padding: 20,
+              }}
             >
               No payouts available
             </Text>
@@ -273,8 +264,8 @@ function Payouts(props) {
         </ScrollView>
       ) : (
         <ScrollView
-          style={{ backgroundColor: "#101820FF" }}
-          contentContainerStyle={styles.container}
+          style={{ backgroundColor: mode == "light" ? "#00000005" : "#000" }}
+          contentContainerStyle={styles[`container${mode}`]}
           showsVerticalScrollIndicator={true}
         >
           {payouts &&
@@ -285,14 +276,13 @@ function Payouts(props) {
                     style={{
                       flexDirection: "row",
                       justifyContent: "space-between",
-
-                      marginBottom: 20,
+                      margin: 20,
                       paddingTop: 20,
                       paddingBottom: 20,
                       paddingRight: 20,
                       paddingLeft: 20,
                       borderRadius: 3,
-                      backgroundColor: "#ffffff10",
+                      backgroundColor: mode == "light" ? "#fff" : "#ffffff10",
                       height: 200,
                     }}
                   >
@@ -303,40 +293,40 @@ function Payouts(props) {
                     >
                       <Text
                         style={{
-                          fontFamily: "Trebuchet",
                           fontSize: 14,
-                          color: "white",
+                          color: mode == "light" ? "black" : "white",
                         }}
                       >
-                        Net Profit: {"\n"}
-                        {separators(item.net_profit)}
+                        <Text style={{ fontWeight: "bold" }}>Net Profit:</Text>{" "}
+                        ${abbreviateNumber(item.net_profit)}
                       </Text>
 
                       <Text
                         style={{
-                          fontFamily: "Trebuchet",
                           fontSize: 14,
-                          color: "white",
+                          color: mode == "light" ? "black" : "white",
                         }}
                       >
-                        Gross Profit: {"\n"}
-                        {separators(item.gross_profit)}
+                        <Text style={{ fontWeight: "bold" }}>
+                          Gross Profit:
+                        </Text>{" "}
+                        ${abbreviateNumber(item.gross_profit)}
                       </Text>
                       <View
                         style={{
                           backgroundColor: item.paid ? "green" : "red",
-                          borderRadius: 2,
-                          padding: 3,
+                          borderRadius: 3,
+                          padding: 5,
+                          alignItems: "center",
                         }}
                       >
                         <Text
                           style={{
-                            fontFamily: "Trebuchet",
                             fontSize: 12,
                             color: "white",
                           }}
                         >
-                          {item.paid ? "Payment Successful" : "Payment Failed"}
+                          {item.paid ? "Paid" : "Unpaid"}
                         </Text>
                       </View>
                     </View>
@@ -344,33 +334,35 @@ function Payouts(props) {
                     <View style={{ justifyContent: "space-between" }}>
                       <Text
                         style={{
-                          fontFamily: "Trebuchet",
                           fontSize: 14,
-                          color: "white",
+                          color: mode == "light" ? "black" : "white",
                         }}
                       >
-                        Total Deduction: {separators(item.total_deduction)}
+                        <Text style={{ fontWeight: "bold" }}>
+                          Total Deduction:
+                        </Text>{" "}
+                        ${abbreviateNumber(item.total_deduction)}
                       </Text>
 
                       <Text
                         style={{
-                          fontFamily: "Trebuchet",
                           fontSize: 14,
-                          color: "white",
+                          color: mode == "light" ? "black" : "white",
                         }}
                       >
-                        Royalty Cut: {separators(item.royalty_cut)}
+                        <Text style={{ fontWeight: "bold" }}>
+                          Royalty Cut:{" "}
+                        </Text>
+                        ${abbreviateNumber(item.royalty_cut)}
                       </Text>
 
                       <Text
                         style={{
-                          fontFamily: "Trebuchet",
                           fontSize: 14,
-                          color: "white",
+                          color: mode == "light" ? "black" : "white",
                         }}
                       >
-                        Time:{" "}
-                        {moment(item.timestamp).format("MMMM Do YYYY, h:mm a")}
+                        {moment(item.timestamp).format("MMMM Do YYYY")}
                       </Text>
                     </View>
                   </View>
@@ -379,23 +371,29 @@ function Payouts(props) {
             })}
         </ScrollView>
       )}
-    </React.Fragment>
+    </View>
   );
 }
 
 export default Payouts;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#101820FF",
-  },
   containerNoPayouts: {
     flex: 1,
     backgroundColor: "#101820FF",
     justifyContent: "center",
     alignItems: "center",
   },
+
+  containerlight: {
+    flex: 1,
+    backgroundColor: "#00000005",
+  },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+
   kContainer: {
     flex: 1,
     justifyContent: "center",
@@ -443,7 +441,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -453,7 +450,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

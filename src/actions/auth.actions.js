@@ -19,11 +19,11 @@ export const authActions = {
   clearState,
 };
 
-function signup(email, first_name, last_name, phone) {
+function signup(email, first_name, last_name, phone, country) {
   return (dispatch) => {
     dispatch(request());
 
-    authService.signup(email, first_name, last_name, phone).then((res) => {
+    authService.signup(email, first_name, last_name, phone, country).then((res) => {
       console.log(res)
       if (res.status == 200) {
         dispatch(

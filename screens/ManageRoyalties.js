@@ -27,15 +27,7 @@ import {
   faPlay,
   faPlayCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  MaterialCommunityIcons,
-  FontAwesome5,
-  SimpleLineIcons,
-  Entypo,
-  AntDesign,
-  Ionicons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+
 import { ScrollView } from "react-native-gesture-handler";
 import { authActions } from "../src/actions/auth.actions";
 import { songActions } from "../src/actions/song.actions";
@@ -49,6 +41,7 @@ function ManageRoyalties(props) {
   const [fullname, setfullname] = useState(null);
   const [share, setshare] = useState(null);
   const [splittings, setsplittings] = useState([]);
+  const mode = useSelector((state) => state.userReducer.mode);
   const [arrayPushed, setarrayPushed] = useState(false);
   const [songVal, setsongVal] = useState(null);
   const { song } = props.route.params;
@@ -84,10 +77,6 @@ function ManageRoyalties(props) {
     }
   }, [message]);
 
-  useEffect(() => {
-    dispatch(songActions.getSongs(token));
-  }, [JSON.stringify(songs.data.results[0].royalties)]);
-
   const handleSplitting = () => {
     splittings.forEach((split) => {
       dispatch(
@@ -117,7 +106,6 @@ function ManageRoyalties(props) {
       >
         <Text
           style={{
-            fontFamily: "Trebuchet",
             color: "#101820",
           }}
         >
@@ -152,22 +140,28 @@ function ManageRoyalties(props) {
           margin: 20,
         }}
       >
-        <Text style={{ fontFamily: "Trebuchet", color: "white", fontSize: 16 }}>
+        <Text
+          style={{
+            color: mode == "light" ? "black" : "white",
+            fontSize: 16,
+            paddingTop: 10,
+          }}
+        >
           For {item.description}
         </Text>
         <View
           style={{
             borderBottomWidth: 1,
-            borderBottomColor: "white",
+            borderBottomColor: mode == "light" ? "#000" : "white",
+
             width: 200,
           }}
         >
           <TextInput
-            style={styles.textInput}
-            placeholderTextColor="white"
+            style={styles[`textInput${mode}`]}
             keyboardType="number-pad"
-            placeholder={`${splittings[index].share} (unchanged)`}
-            placeholderTextColor={"#ffffff30"}
+            placeholder={`${splittings[index].share}% (unchanged)`}
+            placeholderTextColor={mode == "light" ? "#00000050" : "#ffffff30"}
             // value={splitValue}
             onChangeText={(text) => {
               splittings[index].share = text;
@@ -180,7 +174,7 @@ function ManageRoyalties(props) {
   };
   return (
     <KeyboardAwareScrollView
-      style={{ backgroundColor: "#101820FF" }}
+      style={{ backgroundColor: mode == "light" ? "#fff" : "#000" }}
       contentContainerStyle={styles.container}
       behavior="padding"
       showsVerticalScrollIndicator={false}
@@ -192,7 +186,7 @@ function ManageRoyalties(props) {
     >
       <View
         style={{
-          backgroundColor: "#010114",
+          backgroundColor: mode == "light" ? "#000000" : "#212121",
           padding: 50,
         }}
       >
@@ -208,12 +202,11 @@ function ManageRoyalties(props) {
           >
             <Text
               style={{
-                fontFamily: "Trebuchet",
                 color: "white",
                 textAlign: "center",
               }}
             >
-              Your current splitting for {song.title} is as follows:{" "}
+              "{song.title}" - Splitting Information
             </Text>
           </View>
           <FlatList
@@ -223,40 +216,6 @@ function ManageRoyalties(props) {
             renderItem={royalty}
             keyExtractor={(item) => item.id}
           />
-        </View>
-      </View>
-      <View
-        style={{
-          backgroundColor: "#010114",
-          width: "90%",
-          marginLeft: 20,
-          marginRight: 20,
-          justifyContent: "center",
-          alignItems: "center",
-          borderRadius: 5,
-          marginTop: 30,
-          marginBottom: 20,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <MaterialIcons name="library-music" size={24} color="white" />
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
-              fontSize: 15,
-              padding: 20,
-            }}
-          >
-            Splitting Details
-          </Text>
         </View>
       </View>
       <FlatList
@@ -271,7 +230,7 @@ function ManageRoyalties(props) {
           paddingLeft: 10,
           paddingRight: 10,
           width: width - 40,
-          backgroundColor: "#ffffff10",
+          backgroundColor: mode == "light" ? "#00000090" : "#ffffff10",
           height: 50,
           alignItems: "center",
           justifyContent: "center",
@@ -284,8 +243,8 @@ function ManageRoyalties(props) {
           <Text
             style={{
               textAlign: "center",
-              color: "white",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#fff" : "#fff",
+
               fontSize: 13,
             }}
           >
@@ -300,14 +259,23 @@ function ManageRoyalties(props) {
 export default ManageRoyalties;
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#101820FF",
+  containerlight: {
+    backgroundColor: "#fff",
   },
-  textInput: {
-    color: "white",
-    fontFamily: "Trebuchet",
+  containerdark: {
+    backgroundColor: "#000",
+  },
+  textInputlight: {
+    color: "black",
+    paddingBottom: 10,
     fontSize: 16,
   },
+  textInputdark: {
+    color: "white",
+    paddingBottom: 10,
+    fontSize: 16,
+  },
+
   containerNoRoyalty: {
     flex: 1,
     backgroundColor: "#101820FF",
@@ -357,7 +325,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
   errorMessage: {
     color: "#F46270",
@@ -367,7 +334,7 @@ const styles = StyleSheet.create({
   },
   loginInfo: {
     color: "#575757",
-    fontFamily: "Trebuchet",
+
     marginLeft: 20,
     marginTop: 20,
   },

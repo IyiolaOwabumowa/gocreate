@@ -1,26 +1,22 @@
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { store } from "./store";
 import React, { useEffect, useState } from "react";
+import FastImage from "react-native-fast-image";
 import {
   StyleSheet,
   Text,
   View,
   Image,
+  Switch,
   Linking,
   AppState,
   ActivityIndicator,
+  useColorScheme,
   Platform,
 } from "react-native";
-import * as Font from "expo-font";
-import { Asset } from "expo-asset";
-import {
-  FontAwesome5,
-  Ionicons,
-  AntDesign,
-  Fontisto,
-  Octicons,
-  SimpleLineIcons,
-} from "@expo/vector-icons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import Ionicons from "react-native-vector-icons/Ionicons";
+
 import { navigationRef } from "./RootNavigation";
 import { createStackNavigator } from "@react-navigation/stack";
 import {
@@ -29,7 +25,10 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 import { authActions } from "./src/actions/auth.actions";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import {
+  TouchableHighlight,
+  TouchableOpacity,
+} from "react-native-gesture-handler";
 import { Root, Toast, Button } from "native-base";
 import Login from "./screens/Login";
 import Splash from "./screens/Splash";
@@ -38,8 +37,6 @@ import ForgotPassword from "./screens/ForgotPassword";
 import MonitorUploads from "./screens/MonitorUploads";
 import Dashboard from "./screens/Dashboard";
 import UploadSong from "./screens/UploadSong";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import Sidebar from "./screens/Sidebar";
 import CreatePassword from "./screens/CreatePassword";
 import ResetPassword from "./screens/ResetPassword";
@@ -51,6 +48,7 @@ import PersonalInformation from "./screens/PersonalInformation";
 import { URL_SCHEMES } from "./assets/utils/constants";
 import DeepLinking from "react-native-deep-linking";
 import * as RootNavigation from "./RootNavigation.js";
+import SplashScreen from "react-native-splash-screen";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -65,108 +63,73 @@ import ManageRoyalties from "./screens/ManageRoyalties";
 import AddTrack from "./screens/AddTrack";
 import AddRoyalty from "./screens/AddRoyalty";
 import Subscriptions from "./screens/Subscriptions";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { YellowBox } from "react-native";
+import { LogBox } from "react-native";
 import SubscriptionPayment from "./screens/SubscriptionPayment";
 import Label from "./screens/Label";
 import UploadButton from "./screens/UploadButton";
-// import RNPaystack from 'react-native-paystack';
+import { StripeProvider } from "@stripe/stripe-react-native";
 
 const Drawer = createDrawerNavigator();
 
 const App = () => {
+  const [publishableKey, setPublishableKey] = useState(
+    "pk_test_51IjjhCKVJpjSXxYpL4pJsJCfwbvrBhEekm0n2ACycWcbTPMdJhRwrVOtmk07DMyd0Brpck5IHJqkp271RH8JYvJg00wg1vKuJG"
+  );
   const token = useSelector((state) => state.authReducer.token);
+  const mode = useSelector((state) => state.userReducer.mode);
   const isPassword = useSelector((state) => state.authReducer.isPassword);
+  const authorized = useSelector((state) => state.userReducer.authorized);
   const [initialised, setInitialised] = useState(false);
   const [fontLoaded, setFontLoaded] = useState(false);
   const [isScreenLoading, setIsScreenLoading] = useState(true);
+  const artist = useSelector((state) => state.userReducer.artist);
+
+  const loading = useSelector((state) => state.userReducer.loading);
+
   const dispatch = useDispatch();
   const Stack = createStackNavigator();
   const ref = React.useRef();
+  const colorScheme = useColorScheme();
 
-
-  // add URL schemes to `DeepLinking`
-  for (let scheme of URL_SCHEMES) {
-    DeepLinking.addScheme(scheme);
-  }
-
-  const readUrl = async () => {
-    const initial = await Linking.getInitialURL();
-    //setInitialised(false)
-    if (initial !== null) {
-      setInitialised(true);
-      DeepLinking.evaluateUrl(initial);
-      // configure a route, in this case, a simple Settings route
-      // DeepLinking.addRoute("/accounts/verify", (response) => {
-      //   // navigation.navigate("CreatePassword");
-      // });
-      DeepLinking.addRoute("/accounts/verify", (response) => {
-        if (isPassword == false) {
-          RootNavigation.navigate("CreatePassword");
-        }
-      });
+  const toggleSwitch = () => {
+    if (mode === "dark") {
+      dispatch(userActions.setAppearance("light"));
+    } else {
+      dispatch(userActions.setAppearance("dark"));
     }
   };
-  readUrl();
 
   useEffect(() => {
-    console.disableYellowBox = true;
+    setTimeout(() => {
+      SplashScreen.hide();
+    }, 5000);
+  }, []);
 
-    YellowBox.ignoreWarnings(["Animated: `useNativeDriver`"]);
+  useEffect(() => {
+    if (colorScheme === "dark") {
+      dispatch(userActions.setAppearance("dark"));
+    } else {
+      dispatch(userActions.setAppearance("light"));
+    }
+  }, [colorScheme]);
 
+  useEffect(() => {
     dispatch(authActions.getUserToken());
-
-    // const checkInitialUrl = async () => {
-    //   if ((await Linking.getInitialURL()) !== null) {
-    //     AppState.removeEventListener("change", handleAppStateChange);
-    //   }
-    // };
-
-    // checkInitialUrl();
-
-    const splashScreen = async () => {
-      return new Promise((resolve) =>
-        setTimeout(() => {
-          setIsScreenLoading(false);
-        }, 4000)
-      );
-    };
-
-    const fontLoader = async () => {
-      await Font.loadAsync({
-        Trebuchet: require("./assets/fonts/Trebuchet.ttf"),
-      });
-      setFontLoaded(true);
-    };
-
-    fontLoader();
-    splashScreen();
 
     return () => {};
   }, []);
 
-  if (fontLoaded == false || isScreenLoading == true) {
-    return <Splash />;
-  }
+  useEffect(() => {
+    if (token != null) {
+      dispatch(userActions.getArtist(token));
+    }
+  }, [token]);
 
-  const handleSubmit = () => {
-    dispatch(authActions.deleteUserToken());
-  };
-
-  const uploadButton = () => {
-
-      return (
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate("UploadSong");
-          }}
-          style={{ paddingLeft: 20, paddingRight: 20 }}
-        >
-          <Ionicons name="ios-add" size={30} color="white" />
-        </TouchableOpacity>
-      );
- 
-  };
+  useEffect(() => {
+    if (authorized == false) {
+      dispatch(authActions.deleteUserToken());
+    }
+  }, [authorized]);
 
   const Root = ({ navigation }) => {
     const Stack = createStackNavigator();
@@ -177,31 +140,36 @@ const App = () => {
           name="Dashboard"
           component={Dashboard}
           options={{
-            headerTitle: `Dashboard`,
+            headerTitle: `Hi ${
+              artist && artist.first_name ? artist.first_name : ""
+            }!`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#1A5C79",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerLeft: () => {
               return (
                 <TouchableOpacity
                   onPress={() => {
-                    navigation.openDrawer();
+                    navigation.toggleDrawer();
                   }}
                   style={{ paddingLeft: 20 }}
                 >
-                  <FontAwesome5 name={"bars"} size={20} color="white" />
+                  <FontAwesome5
+                    name={"bars"}
+                    size={20}
+                    color={mode == "light" ? "#000000" : "#fff"}
+                  />
                 </TouchableOpacity>
               );
             },
@@ -215,21 +183,17 @@ const App = () => {
             headerTitle: `Profile`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "transparent",
-              borderBottomWidth: 0,
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
@@ -248,19 +212,18 @@ const App = () => {
             headerTitleStyle: {
               fontSize: 15,
               color: "#fff",
-              fontFamily: "Trebuchet",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
               fontSize: 15,
               color: "#fff",
-              fontFamily: "Trebuchet",
             },
           }}
         />
       </Stack.Navigator>
     );
   };
+
   const RoyaltiesScreen = ({ route, navigation }) => {
     const RoyaltiesStack = createStackNavigator();
 
@@ -273,19 +236,19 @@ const App = () => {
             headerTitle: `Royalties`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#1A5C79",
+              color: mode == "light" ? "#000" : "#1A5C79",
             },
+
             headerLeft: () => {
               return (
                 <TouchableOpacity
@@ -294,7 +257,11 @@ const App = () => {
                   }}
                   style={{ paddingLeft: 20 }}
                 >
-                  <FontAwesome5 name={"bars"} size={20} color="white" />
+                  <FontAwesome5
+                    name={"bars"}
+                    size={20}
+                    color={mode == "light" ? "black" : "white"}
+                  />
                 </TouchableOpacity>
               );
             },
@@ -306,7 +273,11 @@ const App = () => {
                   }}
                   style={{ paddingLeft: 20, paddingRight: 20 }}
                 >
-                  <Ionicons name="ios-add" size={30} color="white" />
+                  <Ionicons
+                    name="ios-add"
+                    size={30}
+                    color={mode == "light" ? "black" : "white"}
+                  />
                 </TouchableOpacity>
               );
             },
@@ -316,21 +287,20 @@ const App = () => {
           name="ManageRoyalties"
           component={ManageRoyalties}
           options={{
-            headerTitle: `Manage Royalties`,
+            headerTitle: `Edit Royalties`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#fff",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
@@ -341,18 +311,17 @@ const App = () => {
             headerTitle: `Add a Royalty`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#fff",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
@@ -372,19 +341,19 @@ const App = () => {
             headerTitle: `Payouts`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#18181800",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#1A5C79",
+              color: mode == "light" ? "#000" : "#1A5C79",
             },
+
             headerLeft: () => {
               return (
                 <TouchableOpacity
@@ -393,7 +362,25 @@ const App = () => {
                   }}
                   style={{ paddingLeft: 20 }}
                 >
-                  <FontAwesome5 name={"bars"} size={20} color="white" />
+                  <FontAwesome5
+                    name={"bars"}
+                    size={20}
+                    color={mode == "light" ? "black" : "white"}
+                  />
+                </TouchableOpacity>
+              );
+            },
+            headerRight: () => {
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate("BvnVerification");
+                  }}
+                  style={{ paddingRight: 20 }}
+                >
+                  <Text style={{ color: mode == "light" ? "black" : "white" }}>
+                    Edit Bank Details
+                  </Text>
                 </TouchableOpacity>
               );
             },
@@ -413,13 +400,11 @@ const App = () => {
             headerTitleStyle: {
               fontSize: 15,
               color: "#fff",
-              fontFamily: "Trebuchet",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
               fontSize: 15,
               color: "#fff",
-              fontFamily: "Trebuchet",
             },
           }}
         />
@@ -427,22 +412,20 @@ const App = () => {
           name="BvnVerification"
           component={BvnVerification}
           options={{
-            headerTitle: `Verify Your BVN`,
+            headerTitle: `Update Bank Details`,
+
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
@@ -462,19 +445,19 @@ const App = () => {
             headerTitle: `Distribution`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#1A5C79",
+              color: mode == "light" ? "#000" : "#1A5C79",
             },
+
             headerLeft: () => {
               return (
                 <TouchableOpacity
@@ -483,7 +466,11 @@ const App = () => {
                   }}
                   style={{ paddingLeft: 20 }}
                 >
-                  <FontAwesome5 name={"bars"} size={20} color="white" />
+                  <FontAwesome5
+                    name={"bars"}
+                    size={20}
+                    color={mode == "light" ? "black" : "white"}
+                  />
                 </TouchableOpacity>
               );
             },
@@ -494,47 +481,41 @@ const App = () => {
           component={SubscriptionPayment}
           options={{
             headerTitle: `Distribution Payment`,
-
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#FFF",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
         <SubscriptionsStack.Screen
           name="AddTrack"
           component={AddTrack}
-          options={{
-            headerTitle: `Add Track`,
+          options={({ route }) => ({
+            headerTitle: `Add a song to ${route.params.packageName}`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "transparent",
-              borderBottomWidth: 0,
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#fff",
-              fontSize: 15,
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
-          }}
+          })}
         />
       </SubscriptionsStack.Navigator>
     );
@@ -550,14 +531,13 @@ const App = () => {
             headerTitle: `Uploads`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "#181818",
+              backgroundColor: mode == "light" ? "white" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
             headerTintColor: "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
             headerBackTitle: "Back",
             headerBackTitleStyle: {
@@ -571,13 +551,21 @@ const App = () => {
                   }}
                   style={{ paddingLeft: 20 }}
                 >
-                  <FontAwesome5 name={"bars"} size={20} color="white" />
+                  <FontAwesome5
+                    name={"bars"}
+                    size={20}
+                    color={mode == "light" ? "#000" : "#fff"}
+                  />
                 </TouchableOpacity>
               );
             },
 
             headerRight: () => {
-             return <UploadButton navigation= {navigation} />
+              // if (Platform.OS === "ios") {
+              //   return null;
+              // } else {
+              return <UploadButton navigation={navigation} mode={mode} />;
+              // }
             },
           }}
         />
@@ -596,14 +584,12 @@ const App = () => {
             headerTitleStyle: {
               fontSize: 15,
               color: "#fff",
-              fontFamily: "Trebuchet",
             },
 
             headerBackTitle: "Back",
             headerBackTitleStyle: {
               color: "#fff",
               fontSize: 15,
-              fontFamily: "Trebuchet",
             },
           }}
         />
@@ -614,22 +600,17 @@ const App = () => {
             headerTitle: `Publish Song`,
 
             headerStyle: {
-              backgroundColor: "#010114",
-              shadowColor: "transparent",
-              borderBottomWidth: 0,
+              backgroundColor: mode == "light" ? "#fff" : "#111",
+              shadowColor: mode == "light" ? "#00000020" : "#181818",
             },
-            headerTintColor: "#fff",
+            headerTintColor: mode == "light" ? "#000" : "#fff",
             headerTitleStyle: {
               fontSize: 15,
-              color: "#fff",
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
-
             headerBackTitle: "Back",
             headerBackTitleStyle: {
-              color: "#fff",
-              fontSize: 15,
-              fontFamily: "Trebuchet",
+              color: mode == "light" ? "#000" : "#fff",
             },
           }}
         />
@@ -638,191 +619,121 @@ const App = () => {
   };
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      {token == undefined || token == null ? (
-        <Stack.Navigator>
-          <>
-            <Stack.Screen
-              name="SplashOptions"
-              component={SplashOptions}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Login"
-              component={Login}
-              options={{
-                headerTitle: "Login to your account",
+    <StripeProvider
+      publishableKey={publishableKey}
+      merchantIdentifier="merchant.identifier"
+    >
+      <NavigationContainer ref={navigationRef}>
+        {token == undefined || token == null ? (
+          <Stack.Navigator>
+            <>
+              <Stack.Screen
+                name="SplashOptions"
+                component={SplashOptions}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Login"
+                component={Login}
+                options={{
+                  headerTitle: "Login to your account",
+                  headerStyle: {
+                    backgroundColor: mode == "light" ? "#fff" : "#111",
+                    shadowColor: mode == "light" ? "#00000020" : "#181818",
+                  },
+                  headerTintColor: mode == "light" ? "#000" : "#fff",
+                  headerTitleStyle: {
+                    fontSize: 15,
+                    color: mode == "light" ? "#000" : "#fff",
+                  },
+                  headerBackTitle: "Back",
+                }}
+              />
+              <Stack.Screen
+                name="CreatePassword"
+                component={CreatePassword}
+                options={{
+                  headerShown: false,
+                  headerTitle: "Create Your Password",
 
-                headerStyle: {
-                  backgroundColor: "#101820FF",
-                  shadowColor: "#181818",
-                },
-                headerTintColor: "#fff",
-                headerTitleStyle: {
-                  fontSize: 15,
-                  color: "#fff",
-
-                  fontFamily: "Trebuchet",
-                },
-                headerBackTitle: "Back",
-                headerBackTitleStyle: {
-                  color: "#fff",
-                },
-                headerTintColor: "#fff",
-              }}
-            />
-            <Stack.Screen
-              name="CreatePassword"
-              component={CreatePassword}
-              options={{
-                headerShown: false,
-                headerTitle: "Create Your Password",
-
-                headerStyle: {
-                  backgroundColor: "#fff",
-                  shadowColor: "#181818",
-                },
-                headerTintColor: "#fff",
-                headerTitleStyle: {
-                  fontSize: 15,
-                  color: "#1A5C79",
-
-                  fontFamily: "Trebuchet",
-                },
-                headerBackTitle: "Back",
-                headerBackTitleStyle: {
-                  color: "#1A5C79",
-                },
-                headerTintColor: "#1A5C79",
-              }}
-            />
-            <Stack.Screen
-              name="ForgotPassword"
-              component={ForgotPassword}
-              options={{
-                headerTitle: "Forgot Password",
-                headerStyle: {
-                  backgroundColor: "#101820FF",
-                  shadowColor: "#181818",
-                },
-                headerTintColor: "#fff",
-                headerTitleStyle: {
-                  fontSize: 15,
-                  color: "#fff",
-
-                  fontFamily: "Trebuchet",
-                },
-                headerBackTitle: "Back",
-                headerBackTitleStyle: {
-                  color: "#fff",
-                },
-                headerTintColor: "#fff",
-              }}
-            />
-            <Stack.Screen
-              name="PersonalInfo"
-              component={PersonalInformation}
-              options={{
-                headerTitle: "Personal Information",
-               
-                headerStyle: {
-                  backgroundColor: "#101820FF",
-                  shadowColor: "#181818",
-                },
-                headerTintColor: "#fff",
-                headerTitleStyle: {
-                  fontSize: 15,
-                  color: "#fff",
-
-                  fontFamily: "Trebuchet",
-                },
-                headerBackTitle: "Back",
-                headerBackTitleStyle: {
-                  color: "#fff",
-                },
-                headerTintColor: "#fff",
-              }}
-            />
-          
-
-          </>
-        </Stack.Navigator>
-      ) : (
-        <Drawer.Navigator
-          drawerContent={(props) => <CustomDrawerContent {...props} />}
-          drawerContentOptions={{
-            activeTintColor: "#9DC828",
-            inactiveTintColor: "#ffffff",
-          }}
-          drawerStyle={{
-            backgroundColor: "#010114",
-          }}
-        >
-          <Drawer.Screen
-            name="Dashboard"
-            component={Root}
-            options={{
-              drawerIcon: ({ focused, size }) => (
-                <SimpleLineIcons name={"graph"} size={20} color="white" />
-              ),
+                  headerStyle: {
+                    backgroundColor: mode == "light" ? "#7b7c7c" : "#101820FF",
+                    shadowColor: "#181818",
+                  },
+                  headerTintColor: "#fff",
+                  headerTitleStyle: {
+                    fontSize: 15,
+                    color: "#1A5C79",
+                  },
+                  headerBackTitle: "Back",
+                  headerBackTitleStyle: {
+                    color: "#1A5C79",
+                  },
+                  headerTintColor: "#1A5C79",
+                }}
+              />
+              <Stack.Screen
+                name="ForgotPassword"
+                component={ForgotPassword}
+                options={{
+                  headerTitle: "Forgot Password",
+                  headerStyle: {
+                    backgroundColor: mode == "light" ? "#fff" : "#111",
+                    shadowColor: mode == "light" ? "#00000020" : "#181818",
+                  },
+                  headerTintColor: mode == "light" ? "#000" : "#fff",
+                  headerTitleStyle: {
+                    fontSize: 15,
+                    color: mode == "light" ? "#000" : "#fff",
+                  },
+                  headerBackTitle: "Back",
+                }}
+              />
+              <Stack.Screen
+                name="PersonalInfo"
+                component={PersonalInformation}
+                options={{
+                  headerTitle: "Create an account",
+                  headerStyle: {
+                    backgroundColor: mode == "light" ? "#fff" : "#111",
+                    shadowColor: mode == "light" ? "#00000020" : "#181818",
+                  },
+                  headerTintColor: mode == "light" ? "#000" : "#fff",
+                  headerTitleStyle: {
+                    fontSize: 15,
+                    color: mode == "light" ? "#000" : "#fff",
+                  },
+                  headerBackTitle: "Back",
+                }}
+              />
+            </>
+          </Stack.Navigator>
+        ) : (
+          <Drawer.Navigator
+            drawerContent={(props) => <CustomDrawerContent {...props} />}
+            drawerContentOptions={{
+              activeTintColor: mode == "light" ? "#000" : "#fff",
+              inactiveTintColor: mode == "light" ? "#000" : "#ffffff",
             }}
-          />
-
-          <Drawer.Screen
-            name="Uploads"
-            component={UploadsScreen}
-            options={{
-              drawerIcon: ({ focused, size }) => (
-                <AntDesign name={"upload"} size={20} color="white" />
-              ),
+            drawerStyle={{
+              backgroundColor: mode == "light" ? "#fff" : "#000",
             }}
-          />
+          >
+            <Drawer.Screen name="Dashboard" component={Root} />
 
-          <Drawer.Screen
-            name="Royalties"
-            component={RoyaltiesScreen}
-            options={{
-              drawerIcon: ({ focused, size }) => (
-                <FontAwesome5 name={"signature"} size={20} color="white" />
-              ),
-            }}
-          />
-          <Drawer.Screen
-            name="Payouts"
-            component={PayoutScreen}
-            options={{
-              drawerIcon: ({ focused, size }) => (
-                <FontAwesome5 name={"money-check"} size={20} color="white" />
-              ),
-            }}
-          />
+            <Drawer.Screen name="Uploads" component={UploadsScreen} />
 
-          <Drawer.Screen
-            name="Distribution"
-            component={SubscriptionsScreen}
-            options={{
-              drawerIcon: ({ focused, size }) => (
-                <MaterialCommunityIcons
-                  name="contactless-payment"
-                  size={20}
-                  color="white"
-                />
-              ),
-            }}
-          />
+            <Drawer.Screen name="Royalties" component={RoyaltiesScreen} />
+            <Drawer.Screen name="Payouts" component={PayoutScreen} />
 
-          {/* <Drawer.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            drawerIcon: ({ focused, size }) => (
-              <FontAwesome5 name={"money-check"} size={20} color="white" />
-            ),
-          }}
-        /> */}
-        </Drawer.Navigator>
-      )}
-    </NavigationContainer>
+            <Drawer.Screen
+              name="Distribution"
+              component={SubscriptionsScreen}
+            />
+          </Drawer.Navigator>
+        )}
+      </NavigationContainer>
+    </StripeProvider>
   );
 
   function CustomDrawerContent(props) {
@@ -838,12 +749,10 @@ const App = () => {
         <DrawerContentScrollView {...props}>
           <View
             style={{
-              backgroundColor: "#ffffff05",
-              width: "92%",
+              backgroundColor: mode == "light" ? "#00000010" : "#ffffff25",
+              width: "100%",
               height: 100,
-              marginLeft: 10,
-              marginRight: 10,
-              borderRadius: 10,
+
               marginTop: 40,
               marginBottom: 30,
               justifyContent: "center",
@@ -857,39 +766,29 @@ const App = () => {
                 </View>
               ) : null} */}
 
-              {dpImage != null ? (
-                <View>
-                  <Image
-                    source={{ uri: dpImage }}
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 50,
-                      marginRight: 20,
-                    }}
-                    onLoadStart={() => {
-                      setloader(true);
-                    }}
-                    onLoadEnd={() => {
-                      setloader(false);
-                    }}
-                  />
-                </View>
-              ) : (
-                <View
-                  style={{
-                    backgroundColor: "grey",
-                    width: 60,
-                    height: 60,
-                    borderRadius: 50,
-                  }}
-                ></View>
-              )}
+              <FastImage
+                source={
+                  dpImage != null
+                    ? {
+                        uri: dpImage.split("?")[0],
+                        priority: FastImage.priority.high,
+                        cache: FastImage.cacheControl.immutable,
+                      }
+                    : require("./assets/dummy_avatar.png")
+                }
+                resizeMode="cover"
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 50,
+                  marginRight: 20,
+                }}
+              />
               <View>
                 <Text
                   style={{
-                    color: "white",
-                    fontFamily: "Trebuchet",
+                    color: mode == "light" ? "#000" : "white",
+
                     marginBottom: 15,
                     fontSize: 15,
                     textAlign: "center",
@@ -902,23 +801,21 @@ const App = () => {
                     paddingLeft: 10,
                     paddingRight: 10,
                     width: 150,
-                    backgroundColor: "#ffffff05",
+                    backgroundColor:
+                      mode == "light" ? "#00000010" : "#ffffff15",
                     height: 30,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                   onPress={() => {
-                    props.navigation.navigate("Dashboard", {
-                      screen: "EditProfile",
-                      params: { imageUrl: dpImage },
-                    });
+                    props.navigation.navigate("EditProfile");
                   }}
                 >
                   <Text
                     style={{
                       textAlign: "center",
-                      color: "white",
-                      fontFamily: "Trebuchet",
+                      color: mode == "light" ? "#000" : "white",
+
                       fontSize: 13,
                     }}
                   >
@@ -929,17 +826,68 @@ const App = () => {
             </View>
           </View>
           <DrawerItemList {...props} />
-        </DrawerContentScrollView>
-        <View style={{ position: "absolute", bottom: 0 }}>
-          <DrawerItem
-            icon={() => {
-              return <AntDesign name={"logout"} size={20} color="white" />;
+          <TouchableOpacity
+            onPress={() => {
+              toggleSwitch();
             }}
-            label="Signout of GoCreate"
-            inactiveTintColor="white"
-            onPress={() => dispatch(authActions.deleteUserToken())}
-          />
-        </View>
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: 18,
+              marginTop: 18,
+            }}
+          >
+            <Text
+              style={{
+                marginRight: 10,
+                fontSize: 14,
+                fontWeight: "500",
+                color: mode == "light" ? "black" : "white",
+              }}
+            >
+              Switch to {mode == "light" ? "dark" : "light"} mode
+            </Text>
+            {/* <Switch
+              style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+              trackColor={{
+                false: mode == "light" ? "#000" : "#fff",
+                true: mode == "light" ? "#fff" : "#00000020",
+              }}
+              thumbColor={
+                isEnabled ? (mode == "light" ? "#000" : "#fff") : "#f4f3f4"
+              }
+              ios_backgroundColor="#ffffff90"
+              onValueChange={toggleSwitch}
+              value={isEnabled}
+            /> */}
+          </TouchableOpacity>
+        </DrawerContentScrollView>
+
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 50,
+            marginLeft: 20,
+          }}
+          onPress={() => dispatch(authActions.deleteUserToken())}
+        >
+          {/* <AntDesign
+            name={"logout"}
+            size={20}
+            color={mode == "light" ? "#000" : "white"}
+          /> */}
+
+          <Text
+            style={{
+              fontSize: 18,
+              marginLeft: 10,
+              color: mode == "light" ? "black" : "white",
+            }}
+          >
+            Logout
+          </Text>
+        </TouchableOpacity>
       </>
     );
   }

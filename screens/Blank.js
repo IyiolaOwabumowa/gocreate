@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
       color: "white",
-      fontFamily: "Trebuchet",
+      
     },
     errorMessage: {
       color: "#F46270",
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     },
     loginInfo: {
       color: "#575757",
-      fontFamily: "Trebuchet",
+      
       marginLeft: 20,
       marginTop: 20,
     },

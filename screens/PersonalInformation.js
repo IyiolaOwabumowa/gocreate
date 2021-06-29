@@ -3,6 +3,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { Spinner, Toast } from "native-base";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { authActions } from "../src/actions/auth.actions";
+import CountryPicker, {
+  DARK_THEME,
+  FlagButton,
+} from "react-native-country-picker-modal";
 import {
   StyleSheet,
   StatusBar,
@@ -15,6 +19,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Keyboard,
+  Alert,
 } from "react-native";
 import { Button, Input, Item } from "native-base";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -34,6 +39,7 @@ let logo = Platform.OS === "ios" ? iosLogo : androidLogo;
 
 const PersonalInformation = (props) => {
   const dispatch = useDispatch();
+  const mode = useSelector((state) => state.userReducer.mode);
   const buttonLoader = useSelector((state) => state.authReducer.buttonLoader);
   const message = useSelector((state) => state.authReducer.toastMessage);
   const errorMessage = useSelector((state) => state.authReducer.errorMessage);
@@ -46,13 +52,19 @@ const PersonalInformation = (props) => {
   const [emailError, setEmailError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
+  const [countryError, setCountryError] = useState("");
+
+  const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [countryCode, setCountryCode] = useState(null);
+  const [country, setCountry] = useState(null);
+  const [countryPhone, setCountryPhone] = useState(null);
+  const [callingCode, setCallingCode] = useState("");
+  const [visible, setVisible] = useState(false);
+  const [visiblePhone, setVisiblePhone] = useState(false);
+  const [countryCodePhone, setCountryCodePhone] = useState(null);
 
   useEffect(() => {
-    // if (registered) {
-    //   props.navigation.navigate("OTP", { phone });
-    // }
-    
     if (message != null || message != undefined) {
       Toast.show({
         text: message,
@@ -81,6 +93,8 @@ const PersonalInformation = (props) => {
   }, [email, firstName, lastName, phone, message, registered]);
 
   const handleSubmit = () => {
+    console.log(email, firstName, lastName, phone, country);
+
     const validateEmail = validateInput({ type: "email", value: email });
     const validateFirstName = validateInput({
       type: "name",
@@ -93,46 +107,47 @@ const PersonalInformation = (props) => {
 
     const validatePhone = validateInput({
       type: "name",
-      value: phone,
+      value: `+${callingCode}${phone}`,
+    });
+
+    const validateCountry = validateInput({
+      type: "name",
+      value: `${country}`,
     });
 
     setEmailError(validateEmail);
     setFirstNameError(validateFirstName);
     setLastNameError(validateLastName);
     setPhoneError(validatePhone);
-
+    setCountryError(validateCountry);
     if (
       emailError == null &&
       firstNameError == null &&
-      (lastNameError == null) & (phoneError == null)
+      lastNameError == null &&
+      phoneError == null &&
+      countryError == null
     ) {
       const signUp = async () => {
-        console.log(email, firstName, lastName, phone)
-        dispatch(authActions.signup(email, firstName, lastName, phone));
+        console.log(email, firstName, lastName, phone, country);
+        dispatch(
+          authActions.signup(
+            email,
+            firstName,
+            lastName,
+            `+${callingCode}${phone}`,
+            `${country}`
+          )
+        );
       };
       signUp();
-      // setTimeout(()=>{
-      //   setCreating(false)
-      //
-
-      // }, 3000)
+    } else {
+      setError("Kindly fill all fields and try again");
     }
     Keyboard.dismiss();
   };
 
-  const onChangeText = ({
-    dialCode,
-    unmaskedPhoneNumber,
-    phoneNumber,
-    isVerified,
-  }) => {
-    setPhone(dialCode + "" + unmaskedPhoneNumber);
-      setPhoneError(validateInput({ type: "name", value: unmaskedPhoneNumber }));
-    dispatch(authActions.clearErrors());
-  };
-
   return (
-    <ImageBackground  style={styles.container}>
+    <ImageBackground style={styles[`container${mode}`]}>
       <KeyboardAwareScrollView
         style={styles.kContainer}
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
@@ -144,7 +159,9 @@ const PersonalInformation = (props) => {
         enabled
         enableOnAndroid={true}
       >
-        <StatusBar barStyle="light-content" />
+        <StatusBar
+          barStyle={mode == "light" ? "dark-content" : "light-content"}
+        />
         <View style={{ alignItems: "center" }}>
           {Platform.OS === "ios" ? (
             <Image
@@ -160,14 +177,23 @@ const PersonalInformation = (props) => {
         </View>
 
         <View style={{ marginTop: 20 }}>
-          <Text style={{...styles.loginInfo, lineHeight: 30}}>Sign up with your details below {"\n"} Click on the flag to change your country code</Text>
+          <Text style={styles[`subtext${mode}`]}>
+            Sign up with your details below
+          </Text>
+          {error ? (
+            <Text
+              style={[styles[`errorMessage${mode}`], { textAlign: "center" }]}
+            >
+              {error}
+            </Text>
+          ) : null}
         </View>
-        <Item style={[styles.itemStyle, { marginTop: 40 }]}>
+        <Item style={[styles[`itemStyle${mode}`], { marginTop: 20 }]}>
           <Input
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             placeholder="First Name"
-            placeholderTextColor="#fff"
-            keyboardAppearance={"dark"}
+            placeholderTextColor={mode == "dark" ? "#fff" : "#000"}
+            keyboardAppearance={mode}
             spellCheck={false}
             value={firstName}
             onChangeText={(text) => {
@@ -177,18 +203,13 @@ const PersonalInformation = (props) => {
             }}
           />
         </Item>
-        <View>
-          {firstNameError ? (
-            <Text style={styles.errorMessage}>{firstNameError}</Text>
-          ) : null}
-        </View>
 
-        <Item style={[styles.itemStyle, { marginTop: 20 }]}>
+        <Item style={[styles[`itemStyle${mode}`], { marginTop: 20 }]}>
           <Input
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             placeholder="Last Name"
-            placeholderTextColor="#fff"
-            keyboardAppearance={"dark"}
+            placeholderTextColor={mode == "dark" ? "#fff" : "#000"}
+            keyboardAppearance={mode}
             spellCheck={false}
             value={lastName}
             onChangeText={(text) => {
@@ -198,36 +219,156 @@ const PersonalInformation = (props) => {
             }}
           />
         </Item>
-        <View>
-          {lastNameError ? (
-            <Text style={styles.errorMessage}>{lastNameError}</Text>
-          ) : null}
-        </View>
-       
-     <View style={{marginLeft: 20}}>
-            <IntlPhoneInput
-              containerStyle={{ backgroundColor: "#101820FF", color: "white" }}
-              phoneInputStyle={{ color: "white" }}
-              dialCodeTextStyle={{ color: "white", marginLeft: 10 }}
-              onChangeText={onChangeText}
-              defaultCountry="NG"
+
+        <View
+          style={[
+            styles[`itemStyle${mode}`],
+            {
+              padding: 17,
+              paddingLeft: 25,
+              marginTop: 20,
+
+              justifyContent: "center",
+            },
+          ]}
+        >
+          {visible ? (
+            <CountryPicker
+              theme={DARK_THEME}
+              countryCode={countryCode}
+              withFilter={true}
+              withFlag={true}
+              withCountryNameButton={true}
+              withCallingCode={false}
+              withEmoji={false}
+              onSelect={(country) => {
+                setCountry(country.name);
+                setCountryCode(country.cca2);
+                setVisible(false);
+              }}
+              visible={visible}
             />
-            </View>
-     
-  
-        <View>
-          {phoneError ? (
-            <Text style={styles.errorMessage}>{phoneError}</Text>
           ) : null}
+
+          {country !== null ? (
+            <TouchableOpacity
+              activeOpacity={0.89}
+              onPress={() => {
+                setVisible(true);
+              }}
+              style={{
+                flex: 1,
+
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <FlagButton withEmoji={false} countryCode={countryCode} />
+              <Text style={styles[`selectText${mode}`]}>{country}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.89}
+              onPress={() => {
+                setVisible(true);
+              }}
+            >
+              <Text style={styles[`selectText${mode}`]}>
+                Select your country
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <Item style={[styles.itemStyle, { marginTop:  0}]}>
+        <View
+          style={[
+            styles[`itemStyle${mode}`],
+            {
+              padding: callingCode ? 1.5 : 17,
+              paddingLeft: 25,
+              marginTop: 20,
+
+              justifyContent: "center",
+            },
+          ]}
+        >
+          {visiblePhone ? (
+            <CountryPicker
+              theme={DARK_THEME}
+              countryCode={countryCodePhone}
+              withFilter={true}
+              withFlag={true}
+              withCountryNameButton={true}
+              withCallingCode={true}
+              withEmoji={false}
+              onSelect={(country) => {
+                setCountryPhone(country.name);
+                setCallingCode(country.callingCode);
+                setCountryCodePhone(country.cca2);
+                setVisiblePhone(false);
+              }}
+              visible={visiblePhone}
+            />
+          ) : null}
+
+          {countryPhone !== null ? (
+            <TouchableOpacity
+              activeOpacity={0.89}
+              onPress={() => {
+                setVisiblePhone(true);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <FlagButton
+                withEmoji={false}
+                countryCode={countryCodePhone}
+                onOpen={() => {
+                  setVisiblePhone(true);
+                }}
+              />
+              <Text style={styles[`selectText${mode}`]}>+{callingCode}</Text>
+              <Input
+                keyboardType="number-pad"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChangeText={(text) => {
+                  setPhone(text);
+                }}
+                style={[
+                  styles[`selectText${mode}`],
+                  { fontSize: 15, paddingBottom: 1 },
+                ]}
+              />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.89}
+              onPress={() => {
+                setVisiblePhone(true);
+              }}
+            >
+              <Text style={styles[`selectText${mode}`]}>
+                Select your country code
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Item
+          style={[
+            styles[`itemStyle${mode}`],
+            { marginTop: 20, marginBottom: 10 },
+          ]}
+        >
           <Input
-            style={styles.textInput}
+            style={styles[`textInput${mode}`]}
             placeholder="Email Address"
-            placeholderTextColor="#fff"
+            placeholderTextColor={mode == "dark" ? "#fff" : "#000"}
             keyboardType="email-address"
-            keyboardAppearance={"dark"}
+            keyboardAppearance={mode}
             spellCheck={false}
             autoCapitalize="none"
             value={email}
@@ -240,14 +381,8 @@ const PersonalInformation = (props) => {
         </Item>
 
         <View>
-          {emailError ? (
-            <Text style={styles.errorMessage}>{emailError}</Text>
-          ) : null}
-        </View>
-
-        <View>
           {errorMessage ? (
-            <Text style={styles.errorMessage}>{errorMessage}</Text>
+            <Text style={styles[`errorMessage${mode}`]}>{errorMessage}</Text>
           ) : null}
         </View>
 
@@ -258,7 +393,7 @@ const PersonalInformation = (props) => {
               handleSubmit();
             }}
             activeOpacity={0.95}
-            style={styles.loginButton}
+            style={styles.registerButton}
             block
           >
             {buttonLoader ? (
@@ -267,7 +402,7 @@ const PersonalInformation = (props) => {
               </>
             ) : (
               <>
-                <Text style={styles.buttonText}>Continue</Text>
+                <Text style={styles.buttonText}>Sign Up</Text>
               </>
             )}
           </Button>
@@ -280,20 +415,54 @@ const PersonalInformation = (props) => {
 export default PersonalInformation;
 
 const styles = StyleSheet.create({
-  container: {
+  containerlight: {
     flex: 1,
-    backgroundColor:"#101820FF",
+    backgroundColor: "#fff",
+    alignItems: "center",
     justifyContent: "center",
   },
+  containerdark: {
+    flex: 1,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  subtextlight: {
+    textAlign: "center",
+
+    color: "black",
+    marginBottom: 20,
+  },
+
+  subtextdark: {
+    textAlign: "center",
+
+    color: "white",
+    marginBottom: 20,
+  },
+
+  itemStyledark: {
+    borderColor: "#ffffff00",
+    backgroundColor: "#ffffff10",
+    marginLeft: 20,
+    marginRight: 20,
+
+    borderRadius: 5,
+  },
+  itemStylelight: {
+    borderColor: "#ffffff00",
+    backgroundColor: "#00000020",
+    marginLeft: 20,
+    marginRight: 20,
+
+    borderRadius: 5,
+  },
+
   kContainer: {
     flex: 1,
   },
 
-  textInput: {
-    color: "#fff",
-    fontSize: 14,
-    paddingLeft: 25,
-  },
   itemStyle: {
     borderColor: "#ffffff00",
     backgroundColor: "#00000030",
@@ -308,17 +477,17 @@ const styles = StyleSheet.create({
   },
 
   registerButton: {
-    backgroundColor: "#000",
-
-    height: 40,
-    width: width - 40,
+    backgroundColor: "#111111",
+    height: 50,
     marginTop: 15,
+    width: width - 40,
     paddingLeft: 30,
-    justifyContent: "space-between",
     paddingRight: 30,
+    marginLeft: 20,
+    marginRight: 20,
   },
   loginButton: {
-    backgroundColor: "#1A5C79",
+    backgroundColor: "#00000080",
     height: 50,
     marginTop: 15,
     width: width - 40,
@@ -329,18 +498,35 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontFamily: "Trebuchet",
   },
-  errorMessage: {
-    color: "#fff",
-    paddingLeft: 25,
+  errorMessagelight: {
+    color: "#00000090",
+
+    paddingLeft: 20,
     paddingRight: 20,
-    marginTop: 10,
+  },
+  errorMessagedark: {
+    color: "#ffffff70",
+
+    paddingLeft: 20,
+    paddingRight: 20,
   },
   loginInfo: {
     color: "#fff",
-    fontFamily: "Trebuchet",
+
     marginTop: 20,
     textAlign: "center",
   },
+  textInputlight: {
+    color: "#000",
+    fontSize: 14,
+    paddingLeft: 25,
+  },
+  textInputdark: {
+    color: "#ffffff",
+    fontSize: 14,
+    paddingLeft: 25,
+  },
+  selectTextlight: { color: "black", fontSize: 14 },
+  selectTextdark: { color: "white", fontSize: 14 },
 });
